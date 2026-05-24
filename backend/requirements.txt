@@ -1,0 +1,6 @@
+Flask
+pika
+psycopg2-binary
+redis
+pysolr
+aiohttp

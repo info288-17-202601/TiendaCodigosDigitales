@@ -1,24 +1,29 @@
-# --- ETAPA 1: Construcción (Build) ---
+# --- Build react app ---
+
+# Node version - uses alpine to save storage
 FROM node:18-alpine AS build
 
+# Work directory inside container - Following commands run here
 WORKDIR /app
 
-# Copiar dependencias e instalarlas
+# Copy and install dependencies
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# Copiar código fuente y compilar la aplicación React
+# Copy source code and build react application
 COPY . .
 RUN npm run build
 
-# --- ETAPA 2: Producción (Servir estáticos) ---
+# --- For production, serve static assets ---
+
+# Switch to nginx image - Doesn't inherit node, app is already built
 FROM nginx:alpine
 
-# Copiar los archivos compilados de React al servidor web interno
+# Copy compiled react files to internal web server
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Exponer el puerto interno 80
+# Exposes port
 EXPOSE 80
 
-# Arrancar Nginx en primer plano
+# Runs nginx
 CMD ["nginx", "-g", "daemon off;"]

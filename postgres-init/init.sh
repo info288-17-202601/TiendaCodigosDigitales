@@ -36,7 +36,7 @@ EOSQL
 # 4. Sales DB tables
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_ventas" <<-EOSQL
     CREATE TABLE orden_compra (
-        id_orden VARCHAR(50) PRIMARY KEY,
+        id_orden_compra VARCHAR(50) PRIMARY KEY,
         id_usuario VARCHAR(50) NOT NULL,
         fecha_transaccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         total_pagado DECIMAL(10, 2) NOT NULL,

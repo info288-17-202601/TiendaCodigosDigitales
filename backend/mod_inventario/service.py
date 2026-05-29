@@ -94,4 +94,3 @@ def liberar_codigo_seguro(id_clave, region):
         if conn:
             release_connection(db_name, conn)
 
-

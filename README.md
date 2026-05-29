@@ -20,3 +20,18 @@ Su archivo principal es consumer.py, que define un callback con la logica de su 
 Debido al uso de rabbitMQ y la clausula SKIP LOCKED en sus consultas sql este modulo esta hecho para ser levantado multiples veces de ser necesario.
 
 Actualmente tiene implementado un consumidor de colas rabbitMQ para su interaccion con el modulo de ventas, falta implementar interaccion con modulo de pagos para cambiar de reservado a vendido
+
+### Ventas
+Se ubica en backend/mod_ventas
+
+Su objetivo principal es recibir peticiones del frontend mediante api [por hacer] con datos sobre un carrito de compra para levantar un evento orden.creada 
+
+Ademas escucha:
+* Al modulo de inventario para ver si hay problemas al reservar
+* Al modulo de pagos para ver si el pago es exitoso o fallido [Por hacer]
+
+Este modulo debe ser el unico responsable por la base de datos de ventas y se preocupa por añadir ordenes a este con su estado.
+
+Opciones para actualizar al frontend serian:
+* poling: Que el frontend deje una puerta abierta donde pregunte cada cierto tiempo si esta lista la orden [no muy limpio]
+* totalmente asincrono: tener un apartado de ordenes en el frontend que se conecta a la api del modulo de ventas para preguntar por la lista de ordenes del usuario, para mostrar sus ordenes pendientes y si fallaron o tuvieron exito. Estas dirian que se envio por correo el codigo del juego y esta tarea corresponderia al modulo de notificaiones

@@ -54,6 +54,6 @@ def get_carrito(usuario_id):
     datos = redis_client.get(f"cart:{usuario_id}")
     if datos:
         return json.loads(datos)
-    return {"items": [], "total_estimado": 0, "region_compra": ""}
+    return {"items": [], "total_estimado": 0, "region_compra": "", "total_estimado" : 0}
 
 

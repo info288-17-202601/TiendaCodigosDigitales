@@ -14,6 +14,7 @@ def procesar_orden_creada(ch, method, properties, body):
         usuario_email = datos_orden.get("email")
         region = datos_orden.get('region', 'LATAM')
         items = datos_orden.get('items', [])
+        total_estimado = datos_orden.get('total_estimado')
         
         if not items:
             print(f"[Inventario] Orden {id_orden_compra} rechazada: Carrito vacio.")
@@ -38,6 +39,8 @@ def procesar_orden_creada(ch, method, properties, body):
                 print(f"[Inventario] Fallo al reservar '{juego_id}'. Iniciando rollback de compensacion...")
                 for reserva in reservas_exitosas:
                     liberar_codigo_seguro(reserva['id_clave'], region)
+                print(f"[Inventario] Rollback completo")        
+        
                 
                 # Emitir evento de fallo total
                 evento_fallo = {
@@ -56,7 +59,8 @@ def procesar_orden_creada(ch, method, properties, body):
             "usuario_id": usuario_id,
             "usuario_email": usuario_email,
             "claves_reservadas": reservas_exitosas, # Ahora enviamos una lista completa
-            "estado": "RESERVADO"
+            "estado": "RESERVADO",
+            "total_estimado": total_estimado
         }
         publicar_evento('inventario.reservado', evento_exito)
         print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")

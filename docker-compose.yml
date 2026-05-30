@@ -94,6 +94,7 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=adminpassword
       - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
     ports:
       - "5002:5002" 
     volumes:

@@ -66,7 +66,7 @@ def obtener_detalle_juego(id_juego):
         # RealDictCursor hace que la respuesta sea {"titulo": "x", "precio": y} en vez de una tupla rara ("x", y)
         cur = conn.cursor(cursor_factory=RealDictCursor) 
         
-        # Hacemos la consulta SQL a la tabla catalogo que definieron en su diagrama
+        # Hacemos la consulta SQL a la tabla catalogo
         cur.execute("SELECT * FROM catalogo WHERE id_juego = %s", (id_juego,))
         juego = cur.fetchone() # fetchone() trae solo 1 resultado
         

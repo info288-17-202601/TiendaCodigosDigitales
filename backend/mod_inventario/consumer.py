@@ -58,9 +58,9 @@ def procesar_orden_creada(ch, method, properties, body):
             "id_orden_compra": id_orden_compra,
             "usuario_id": usuario_id,
             "usuario_email": usuario_email,
-            "claves_reservadas": reservas_exitosas, # Ahora enviamos una lista completa
-            "estado": "RESERVADO",
-            "total_estimado": total_estimado
+            "items": reservas_exitosas, # Ahora enviamos una lista completa
+            "estado_reserva": "EXITO",
+            "monto_a_cobrar": total_estimado
         }
         publicar_evento('inventario.reservado', evento_exito)
         print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")

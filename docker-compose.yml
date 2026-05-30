@@ -48,6 +48,7 @@ services:
       - MAX_CACHE_POOL_CONNS=50
     ports:
       - "5050:5050"
+      - "5001:5001"
     volumes:                                  # For hot reloading
       - ./backend:/app
     depends_on:

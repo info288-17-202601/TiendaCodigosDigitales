@@ -31,7 +31,7 @@ def get_inventory_db_name(region):
         "NA": "db_inv_na",
         "EU": "db_inv_eu"
     }
-    return shards.get(region.upper(), "db_inv_na")
+    return shards.get(region.upper(), "db_inv_latam")
 
 
 # Obtiene y retorna una conexion desde la piscina de <db_name>

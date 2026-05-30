@@ -6,6 +6,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE DATABASE db_usuarios;
     CREATE DATABASE db_catalogo;
     CREATE DATABASE db_ventas;
+    CREATE DATABASE db_perfil
     CREATE DATABASE db_inv_latam;
 EOSQL
 
@@ -59,4 +60,14 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_latam" <<-E
     INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
     ('splatoon-3-ext', 'LATAM-ABCD-1234', 'DISPONIBLE'),
     ('splatoon-3-ext', 'LATAM-EFGH-5678', 'DISPONIBLE');
+EOSQL
+
+# 6. Profile DB tables
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQL
+    CREATE TABLE perfil_pago (
+        id_usuario VARCHAR(50) NOT NULL,
+        tipo_tarjeta VARCHAR(50) NOT NULL,
+        token_pago VARCHAR(100) NOT NULL,
+        ultimos_4 VARCHAR(4) NOT NULL
+    );
 EOSQL

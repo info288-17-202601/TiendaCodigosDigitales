@@ -75,5 +75,28 @@ services:
       - backend_api
       - frontend_app
 
+# 7. Motor de Búsqueda - Apache Solr
+  solr_engine:
+    image: solr:9.5-slim
+    container_name: solr_search
+    ports:
+      - "8983:8983" # Puerto por defecto de Solr
+    # Este comando crea automáticamente un "core" (como una base de datos) llamado "catalogo"
+    command: solr-precreate catalogo
+
+# 8. Módulo de Búsqueda
+  search_api:
+    build: 
+      context: ./backend
+    container_name: python_search
+    ports:
+      - "5002:5002" 
+    volumes:
+      - ./backend:/app 
+    # Este comando ejecuta específicamente el archivo service.py
+    command: python mod_busqueda/service.py 
+    depends_on:
+      - solr_engine
+
 volumes:
   pg_data:

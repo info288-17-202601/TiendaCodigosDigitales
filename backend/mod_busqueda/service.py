@@ -1,3 +1,5 @@
+""" service.py: Es la API web (Flask). Se encarga de responder a las búsquedas de los usuarios """
+
 import os
 # Importamos Flask (para crear la API web) y jsonify (para responder en formato JSON)
 from flask import Flask, request, jsonify
@@ -6,6 +8,9 @@ import pysolr
 
 import psycopg2 
 from psycopg2.extras import RealDictCursor
+
+import threading  # Librería nativa para procesos en segundo plano
+from consumer import iniciar_escucha_busqueda
 
 # 1. Inicializamos la aplicación Flask
 app = Flask(__name__)
@@ -27,26 +32,31 @@ def get_db_connection():
 # Creamos el "cliente" que hablará con Solr
 solr = pysolr.Solr(SOLR_URL, always_commit=True)
 
-# 3. Creamos la "Ruta" o "Endpoint" de búsqueda
-# Cuando alguien entre a http://tu-servidor:5002/buscar, se ejecutará esta función
-@app.route('/buscar', methods=['GET'])
+# 3. Creamos la "Ruta" o "Endpoint" de búsqueda inteligente
+@app.route('/buscarPorTitulo', methods=['GET'])
 def buscar_juegos():
-    # request.args.get() atrapa las variables de la URL. 
-    # Ejemplo: /buscar?q=mario -> Atrapa la palabra "mario"
-    # Si no envían nada, el valor por defecto será '*:*' (que en Solr significa "traer todo")
-    termino_busqueda = request.args.get('q', '*:*') 
+    # Ahora atrapamos un parámetro normal, por ejemplo: /buscarPorTitulo?t=splatoon
+    # Si no envían nada, el valor será un texto vacío ''
+    nombre_juego = request.args.get('t', '') 
+
+    # --- EL BACKEND HACE LA TRADUCCIÓN ---
+    if nombre_juego == '':
+        # Si el usuario no escribió nada, le traemos todo el catálogo
+        query_solr = '*:*'
+    else:
+        # Si el usuario escribió "splatoon", el backend arma la sintaxis de Solr sola:
+        # Se convierte en: titulo:*splatoon*
+        query_solr = f'titulo:*{nombre_juego}*'
+    # -------------------------------------
 
     try:
-        # 4. Le pedimos a Solr que busque
-        # Hacemos una búsqueda simple. En un futuro aquí puedes añadir filtros
-        resultados = solr.search(termino_busqueda)
+        # Le enviamos la búsqueda traducida a Solr
+        resultados = solr.search(query_solr)
 
-        # 5. Preparamos la respuesta
         lista_juegos = []
         for juego in resultados:
-            lista_juegos.append(juego) # Guardamos cada resultado en nuestra lista
+            lista_juegos.append(juego) 
 
-        # Devolvemos la lista en formato JSON con un código 200 (OK)
         return jsonify({
             "mensaje": "Búsqueda exitosa",
             "cantidad_encontrada": len(lista_juegos),
@@ -54,8 +64,42 @@ def buscar_juegos():
         }), 200
 
     except Exception as e:
-        # Si algo falla (ej. Solr está apagado), devolvemos un error 500
         return jsonify({"error": "Fallo en el servidor de búsqueda", "detalle": str(e)}), 500
+    
+# Ruta para buscar juegos exclusivamente por su plataforma
+@app.route('/buscarPorPlataforma', methods=['GET'])
+def buscar_por_plataforma():
+    # Atrapamos el parámetro 'p' de la URL. Ejemplo: /buscarPorPlataforma?p=Nintendo
+    plataforma_buscada = request.args.get('p', '') 
+
+    # --- TRADUCCIÓN PARA SOLR ---
+    if plataforma_buscada == '':
+        # Si no especifican plataforma, trae todo el catálogo
+        query_solr = '*:*'
+    else:
+        # Forzamos a Solr a buscar coincidencias parciales solo en el campo 'plataforma'
+        # Esto se traducirá como: plataforma:*Nintendo*
+        query_solr = f'plataforma:*{plataforma_buscada}*'
+    # -----------------------------
+
+    try:
+        # Ejecutamos la búsqueda en Solr
+        resultados = solr.search(query_solr)
+
+        lista_juegos = []
+        for juego in resultados:
+            lista_juegos.append(juego) 
+
+        return jsonify({
+            "mensaje": f"Búsqueda por plataforma exitosa",
+            "criterio": plataforma_buscada if plataforma_buscada else "Todas",
+            "cantidad_encontrada": len(lista_juegos),
+            "resultados": lista_juegos
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": "Fallo en el servidor de búsqueda", "detalle": str(e)}), 500
+    
 
 # Nueva ruta que recibe el ID del juego en la URL (ej: /juego/splatoon-3-ext)
 @app.route('/juego/<id_juego>', methods=['GET'])
@@ -83,8 +127,15 @@ def obtener_detalle_juego(id_juego):
         if conn is not None:
             conn.close() 
 
-# 6. Encender el servidor
 if __name__ == '__main__':
+
+    # Arrancamos el consumidor de RabbitMQ en un hilo de fondo (background thread)
+    # daemon=True asegura que si Flask se apaga, el consumidor también se apague.
+    hilo_consumidor = threading.Thread(target=iniciar_escucha_busqueda, daemon=True)
+    hilo_consumidor.start()
+    print("[*] Hilo del consumidor RabbitMQ iniciado en segundo plano.", flush=True)
+
+    # Arrancamos Flask
     # Según la documentación, este módulo va en el puerto 5002
     # host='0.0.0.0' permite que Docker exponga el puerto hacia afuera
     app.run(host='0.0.0.0', port=5002)

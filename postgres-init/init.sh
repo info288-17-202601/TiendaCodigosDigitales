@@ -32,6 +32,20 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
     -- Insertar un producto de prueba para que puedan probar mañana
     INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) 
     VALUES ('splatoon-3-ext', 'Splatoon 3: Expansion Pass', 'Nintendo Switch', 19990.00);
+
+        -- Más juegos para el catálogo de Nintendo Switch
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) VALUES 
+    ('splatoon-3', 'Splatoon 3', 'Nintendo Switch', 49990.00),
+    ('mario-odyssey', 'Super Mario Odyssey', 'Nintendo Switch', 49990.00),
+    ('zelda-totk', 'The Legend of Zelda: Tears of the Kingdom', 'Nintendo Switch', 59990.00),
+    ('mario-kart-8', 'Mario Kart 8 Deluxe', 'Nintendo Switch', 49990.00);
+
+    -- Juegos para el catálogo de PlayStation 5 (Sony)
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) VALUES 
+    ('gow-ragnarok', 'God of War Ragnarök', 'PlayStation 5', 54990.00),
+    ('spiderman-2', 'Marvel''s Spider-Man 2', 'PlayStation 5', 59990.00),
+    ('tlou-part1', 'The Last of Us Part I', 'PlayStation 5', 49990.00),
+    ('elden-ring-ps5', 'Elden Ring', 'PlayStation 5', 44990.00);
 EOSQL
 
 # 4. Sales DB tables

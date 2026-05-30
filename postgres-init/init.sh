@@ -79,6 +79,7 @@ EOSQL
 # 6. Profile DB tables
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQL
     CREATE TABLE perfil_pago (
+        id_perfil SERIAL PRIMARY KEY,
         id_usuario VARCHAR(50) NOT NULL,
         tipo_tarjeta VARCHAR(50) NOT NULL,
         token_pago VARCHAR(100) NOT NULL,

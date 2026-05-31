@@ -5,6 +5,8 @@ import pysolr
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# Para testear, ejecutar: docker exec -it python_search python -m mod_busqueda.consumer
+
 # Raíz del backend al path para poder importar shared
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared.messaging import iniciar_consumidor
@@ -13,7 +15,7 @@ from shared.messaging import iniciar_consumidor
 SOLR_URL = 'http://solr_engine:8983/solr/catalogo'
 solr = pysolr.Solr(SOLR_URL, always_commit=True)
 
-# Función auxiliar para conectarnos a Postgres
+
 def obtener_conexion_db():
     return psycopg2.connect(
         host=os.environ.get('DB_HOST', 'db_main'),
@@ -66,8 +68,7 @@ def callback_busqueda(ch, method, properties, body):
                 resultados_solr = solr.search(f'id:{id_juego}')
                 if len(resultados_solr) > 0:
                     juego_solr = resultados_solr.docs[0]
-                    # Solr guarda la disponibilidad_regional como un string que hay que parsear a dict si es necesario
-                    # Pero en un escenario simple, con modificar Postgres el Bootstrapping futuro lo leerá bien.
+
                     # Para mantener sincronizado Solr en vivo:
                     juego_solr['disponibilidad_regional'] = json.dumps(json_disponibilidad)
                     solr.add([juego_solr])
@@ -80,7 +81,7 @@ def callback_busqueda(ch, method, properties, body):
             if cur:
                 cur.close()
 
-        # Confirmación manual del mensaje (¡Importante para RabbitMQ!)
+        # Confirmación manual del mensaje 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         
     except Exception as e:

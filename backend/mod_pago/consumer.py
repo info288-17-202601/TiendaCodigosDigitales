@@ -1,9 +1,10 @@
 # Espera compras
 
 import json
-from mod_pago.service import procesar_pago
+from service import procesar_pago
 from shared.messaging import publicar_evento
 
+# Procesamiento de compra de los productos
 def verificar_compra(ch, method, properties, body):
     try:
         datos_orden = json.loads(body)

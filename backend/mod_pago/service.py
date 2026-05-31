@@ -3,10 +3,12 @@ import time
 from random import randint
 from shared.messaging import iniciar_consumidor
 
-
+# Funcion para poder ver los mensajes
 def iniciar_escucha():
     iniciar_consumidor('orden.creada',procesar_pago)
 
+
+# Procesamiento de la compra de manera artificial
 def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,token:str):
     print(f"Realizando compra de {monto}\nUserID : {usuario}\nCorreo : {correo}")
 

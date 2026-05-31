@@ -1,7 +1,8 @@
 """ cargamos catalogo a Solr desde Postgres al iniciar el contenedor de búsqueda. 
 Esto es para tener datos en Solr desde el arranque """
+# Ejecutar con: docker exec -it python_backend python /app/mod_busqueda/sincronizar_solr.py
 
-# Ejecutar con docker exec -it python_search python /app/mod_busqueda/sincronizar_solr.py
+import json
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -30,12 +31,16 @@ try:
     # 4. Formatear para Solr
     documentos = []
     for juego in juegos:
+        disp = juego.get('disponibilidad_regional')
+        if disp is None:
+            disp = {}
+
         documentos.append({
             "id": juego['id_juego'],
             "titulo": juego['titulo'],
             "plataforma": juego['plataforma'],
             "precio_base": float(juego['precio_base']),
-            "stock": 2 # Stock base para pruebas
+            "disponibilidad_regional": json.dumps(disp)
         })
         
     # 5. Inyectar en Solr

@@ -39,7 +39,6 @@ def buscar_juegos():
     # Si no envían nada, el valor será un texto vacío ''
     nombre_juego = request.args.get('t', '') 
 
-    # --- EL BACKEND HACE LA TRADUCCIÓN ---
     if nombre_juego == '':
         # Si el usuario no escribió nada, le traemos todo el catálogo
         query_solr = '*:*'

@@ -38,11 +38,11 @@ const GameDetail = ({ gameId, onNavigate }) => {
           </div>
           
           <p style={styles.description}>
-            {game.descripcion || 'No description available for this game.'}
+            {game.descripcion || 'No hay una descripción disponible para este juego actualmente.'}
           </p>
           
           <div style={styles.actionArea}>
-            <div style={styles.price}>${game.precio?.toLocaleString('es-CL') || 0}</div>
+            <div style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</div>
             <button 
               className="btn-primary" 
               onClick={() => {
@@ -125,7 +125,7 @@ const styles = {
     border: '1px solid rgba(255,255,255,0.05)'
   },
   price: {
-    fontSize: '2.5rem',
+    fontSize: '2rem',
     fontWeight: 'bold',
     color: 'var(--success)'
   }

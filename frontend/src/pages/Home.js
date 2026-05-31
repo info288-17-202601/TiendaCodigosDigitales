@@ -48,13 +48,13 @@ const Home = ({ onNavigate }) => {
           <div style={styles.loading}>No se encontraron juegos.</div>
         ) : (
           games.map(game => (
-            <div key={game.id} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
+            <div key={game.id_juego} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
               <div style={styles.cardImagePlaceholder}>
-                {game.titulo && Array.isArray(game.titulo) ? game.titulo[0] : game.titulo ? game.titulo[0] : '?'}
+                {game.titulo ? game.titulo[0] : '?'}
               </div>
               <div style={styles.cardContent}>
-                <h3>{game.titulo && Array.isArray(game.titulo) ? game.titulo[0] : game.titulo}</h3>
-                <p style={styles.price}>${(game.precio_base && Array.isArray(game.precio_base) ? game.precio_base[0] : game.precio_base)?.toLocaleString('es-CL') || 0}</p>
+                <h3>{game.titulo}</h3>
+                <p style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</p>
               </div>
             </div>
           ))
@@ -100,15 +100,15 @@ const styles = {
     gap: '1rem'
   },
   cardImagePlaceholder: {
-    height: '160px',
+    height: '180px',
     background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-primary))',
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '4rem',
+    fontSize: '2rem',
     fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.1)'
+    color: 'rgba(255, 255, 255, 0.1)',
   },
   cardContent: {
     display: 'flex',

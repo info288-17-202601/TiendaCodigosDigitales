@@ -133,7 +133,7 @@ class UseCartMock {
       existing.cantidad += cantidad;
     } else {
       this.items.push({
-        id_juego: game.id_juego,
+        id_juego: game.id,
         game,
         cantidad,
         precio_unitario: game.precio_base,

@@ -1,33 +1,28 @@
 from flask import Flask, request, jsonify
-from mod_pago.service import iniciar_escucha
+from service import iniciar_escucha
 from shared.database import get_connection, release_connection
 import threading
 
-# Perdon por los comentarios tehe~
-
+# Definicion principal del Modulo de pagos
 app = Flask(__name__)
 
 def main():
+    # Linea Principal para RabbitMQ
     hilo_consumidor = threading.Thread(target=iniciar_escucha, daemon=True)
     hilo_consumidor.start()
 
+    # Mini api para la base de datos de perfiles
     app.run(host='0.0.0.0', port=5003)
 
 
-# La  peticion en frontend de esto es algo tipo asi
-# GET /cartera
-# Content-Type: application/json
-# {
-#     "usuario_id": 1,
-# }
+# Definicion de Metodos para la API
 
-# ATRAE SU ATENCION A ELLA
-# HAZ SONIDO DE CARTERA
-# *Respiro*
+# Solicitar las tarjetas del usuario
+#
+# GET /cartera?id_usuario=algo
 @app.route('/cartera',methods=['GET']) 
 def conseguir_cartera():
-    data = request.get_json()
-    usuario_id = data.get('usuario_id') 
+    id_usuario = request.args.get('id_usuario') 
 
     # Comienzo conexion
     conn = None
@@ -38,15 +33,12 @@ def conseguir_cartera():
         query = """
             SELECT tipo_tarjeta,ultimos_4,id_perfil
             FROM perfil_pago
-            WHERE usuario_id = %s
+            WHERE id_usuario = %s
         """
 
-        cursor.execute(query,(usuario_id))
+        cursor.execute(query,(id_usuario,))
         tarjetas = cursor.fetchall()
 
-        
-        cursor.close()
-        release_connection("db_perfil",conn)
         if not tarjetas:
             return jsonify({"error":"El usuario no tiene ninguna tarjeta"}),404
         
@@ -57,44 +49,14 @@ def conseguir_cartera():
 
     except Exception as e:
         return jsonify({"error":"Algo fallo al intentar conseguir las billeteras","detalle":str(e)}),500
+    
+    finally:
+        cursor.close()
+        if conn:
+            release_connection("db_perfil",conn)
 
-##++--.                                                        
-#++--.                                                        
-#++--.                                                .       
-#++--.       .---..-###+++------++##+                ..-      
-#++-..      ###+++--------------------+#             .-.      
-#++--.     .+++--------+++-++------------#           ..-.     
-#++-..     .+++---------+--++-------------+#         ....     
-#++-..     .+++---------##+##--------------+-       .......   
-#+--..     .#++++++--####++####+++++++++++#-+#---++-+++-+++-++
-#+--..     ...       ###+--+#           ####-##############+##
-#+--........--       ####+-#.  .--+++++-###+-+################
-#+----.....+#+++++++++++------+++++++++++++----+##############
-#++------..-+++-----------------------------------+###########
-#+++-----..-+++-------------------------------------+#########
-#++++----..-+++---------------------------------------########
-#++++----..-+++---------+-----------------------------+#######
-#+++++---..-+++--------#+-----------------------------+#######
-##++++---..-+++------+#---+++++-----------------------+#######
-##++++---..-+++-----+#-+#+++++++#++-------------------+#######
-##++++---..-+++----+#-+######++++++#+-----------------########
-##++++---..-++++---+#+-#++++++#+++++++-++-----------+#########
-##++++---..-+++++++++#+++++++--++#++++-++----------+##########
-##++++---..-+#+++#+++++++++++++++++++++#+------+++############
-##++++---..-+++++++#++++##+++++++++++++++--+-+################
-##++++---..-##+++++++++++###+++++++++++##########++++#########
-##++++---.....#+++++++#+++++++++++######+++++##+++++++########
-##++++---...+++#+++++#+++++++-#+++++####+++++#++++++++###++++#
-##++++---..     #+++++++++#++##++++++#+.+#++++++++#+++-.---.--
-##++++---..      #+++++++#+++++#+++++++#++#++++++#-----..--..-
-##++++----.      .+#++++##+++++++#+++++++#.+####-.-.. ....-..-
-##++++----...--------+----+#+++++++#++++++#-.------------.----
-##+++++---..--.----..-..----#+++++++#++++++#-------.----------
-###++++---..--------------##++++++++#++++++---------....------
-# Asi no suenan las carteras Gumball
-
-
-# La  peticion en frontend de esto es algo tipo asi
+# Añadir una nueva tarjeta de un usuario a la BD
+#
 # PUT /cartera
 # Content-Type: application/json
 # {
@@ -105,6 +67,8 @@ def conseguir_cartera():
 @app.route('/cartera',methods=['PUT'])
 def añadir_cartera():
     data = request.get_json()
+    if not data:
+        return jsonify({"error":"No se entregaron parametros"}),400
     id_usuario = data.get('usuario_id')
     tipo_tarjeta = data.get('tipo_tarjeta')
     ultimos_4 = data.get('ultimos_4')
@@ -135,15 +99,17 @@ def añadir_cartera():
         
             return jsonify({"error":"Hubo un fallo en la base de datos","detalle":str(e_db)}),500
         
-        finally:
-            if conn:
-                cursor.close()
-                release_connection("db_perfil",conn)
+        
     
     except Exception as e:
         return jsonify({"error":"Algo fallo al intentar conseguir las billeteras","detalle":str(e)}),500
-
-# La  peticion en frontend de esto es algo tipo asi
+    
+    finally:
+            if conn:
+                cursor.close()
+                release_connection("db_perfil",conn)
+# Eliminar una tarjeta de la BD
+#
 # DELETE /cartera
 # Content-Type: application/json
 # {
@@ -152,6 +118,8 @@ def añadir_cartera():
 @app.route('/cartera',methods=['DELETE'])
 def eliminar_cartera():
     data = request.get_json()
+    if not data:
+        return jsonify({"error":"No se entregaron parametros"}),400
     id_perfil = data.get('id_perfil') 
     conn = None
     try:
@@ -164,11 +132,9 @@ def eliminar_cartera():
             WHERE id_perfil = %s
         """
 
-        cursor.execute(query,(id_perfil))
+        cursor.execute(query,(id_perfil,))
         tarjetas = cursor.fetchone()
         if not tarjetas:
-            cursor.close()
-            release_connection("db_perfil",conn)
             return jsonify({"error":"la tarjeta ingresada no existe"}),404
 
         try:
@@ -176,7 +142,7 @@ def eliminar_cartera():
             DELETE FROM perfil_pago
             WHERE id_perfil = %s
             """
-            cursor.execute(query,(id_perfil))
+            cursor.execute(query,(id_perfil,))
             conn.commit()
 
             return jsonify({"mensaje":"La tarjeta fue eliminada del sistema de manera correcta"}),200
@@ -186,14 +152,15 @@ def eliminar_cartera():
                 conn.rollback()
             return jsonify({"error":"Algo fallo al intentar conseguir las billeteras","detalle":str(e_db)}),500
 
-        finally:
-            cursor.close()
-            if conn:
-                release_connection("db_perfil",conn)
-
     except Exception as e:
         return jsonify({"error":"Algo fallo al intentar conseguir las billeteras","detalle":str(e)}),500
+    
+    finally:
+        cursor.close()
+        if conn:
+            release_connection("db_perfil",conn)
 
+# Para que todo funcione
 
 if __name__ == "__main__":
     main()

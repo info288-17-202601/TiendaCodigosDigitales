@@ -3,12 +3,17 @@ import time
 from random import randint
 from shared.messaging import iniciar_consumidor
 
-
+# Funcion para poder ver los mensajes
 def iniciar_escucha():
-    iniciar_consumidor('orden.creada',procesar_pago)
+    iniciar_consumidor('inventario.reservado',procesar_pago)
 
-def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,token:str):
+
+# Procesamiento de la compra de manera artificial
+def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,region:str, metodo_pago:str, token:str):
     print(f"Realizando compra de {monto}\nUserID : {usuario}\nCorreo : {correo}")
+
+    #Llamada al 3ro que procesara el pago en caso de no existir un token para conexion directa
+    print(f"El metodo de {metodo_pago} fue aceptado. Token: {token}")
 
     print(f"El token taba bien :3")
 
@@ -32,25 +37,33 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,token
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "APROBADO",
+                "motivo": "",
+                "region":region,
                 "id_transaccion_pasarela": "txn_987654321"
             }
         case "expirado":
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
-                "motivo": "Timed Out - El pago demoro en ser procesado"
+                "motivo": "Timed Out - El pago demoro en ser procesado",
+                "region":region,
+                "id_transaccion_pasarela": ""
             }
         case "cancelado":
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO", 
-                "motivo": "Pago Cancelado / No procesado"
+                "motivo": "Pago Cancelado / No procesado",
+                "region":region,
+                "id_transaccion_pasarela": ""
             }
         case "rechazado":
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
-                "motivo": "Tarjeta rechazada"
+                "motivo": "Tarjeta rechazada",
+                "region":region,
+                "id_transaccion_pasarela": ""
             }
         case _ :
             payload = {None}

@@ -1,7 +1,9 @@
 import json
 import time
-from shared.messaging import iniciar_consumidor, publicar_evento
+from shared.messaging import iniciar_multiples_consumidores, publicar_evento
 from mod_inventario.service import reservar_codigo_seguro, liberar_codigo_seguro
+
+# ----- Callbacks -----
 
 def procesar_orden_creada(ch, method, properties, body):
     """
@@ -14,14 +16,16 @@ def procesar_orden_creada(ch, method, properties, body):
         usuario_email = datos_orden.get("email")
         region = datos_orden.get('region', 'LATAM')
         items = datos_orden.get('items', [])
+        metodo_pago = datos_orden.get('metodo_pago')
         total_estimado = datos_orden.get('total_estimado')
+
         
         if not items:
             print(f"[Inventario] Orden {id_orden_compra} rechazada: Carrito vacio.")
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
             
-        print(f"[*] Procesando orden {id_orden_compra} con {len(items)} items | Region: {region}")
+        print(f"[*] Procesando orden {id_orden_compra} con {len(items)} items | Region: {region} | Metodo de pago: {metodo_pago}")
 
         reservas_exitosas = []
 
@@ -47,6 +51,7 @@ def procesar_orden_creada(ch, method, properties, body):
                     "id_orden_compra": id_orden_compra,
                     "usuario_id": usuario_id,
                     "usuario_email": usuario_email,
+                    "metodo_pago": metodo_pago,
                     "motivo": f"OUT_OF_STOCK_{juego_id}"
                 }
                 publicar_evento('inventario.fallido', evento_fallo)
@@ -57,10 +62,12 @@ def procesar_orden_creada(ch, method, properties, body):
         evento_exito = {
             "id_orden_compra": id_orden_compra,
             "usuario_id": usuario_id,
+            "region": region,
             "usuario_email": usuario_email,
-            "items": reservas_exitosas, # Ahora enviamos una lista completa
+            "items": reservas_exitosas, 
             "estado_reserva": "EXITO",
-            "monto_a_cobrar": total_estimado
+            "metodo_pago": metodo_pago,
+            "monto_a_cobrar": total_estimado,
         }
         publicar_evento('inventario.reservado', evento_exito)
         print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")
@@ -71,7 +78,96 @@ def procesar_orden_creada(ch, method, properties, body):
     except Exception as e:
         print(f"[!] Error inesperado en consumidor de inventario: {e}")
 
+
+def callback_pago_inventario(ch, method, properties, body):
+    payload = json.loads(body)
+    id_orden_compra = payload.get('id_orden_compra')
+    metodo_pago = payload.get('metodo_pago')
+    estado_pago = payload.get('estado_pago')
+    region = payload.get('region')
+
+    # Si la compra fue exitosa registrar la clave como VENDIDO
+    if (estado_pago == "APROBADO"):
+        db_name = get_inventory_db_name(region)
+        conn = None
+        try:
+            conn = get_connection(db_name)
+            cur = conn.cursor()
+
+            # Usamos UPDATE
+            query = """
+                UPDATE clave digital
+                SET estado = 'VENDIDO' 
+                WHERE id_orden_compra = %s;
+            """
+            cur.execute(query, (id_orden_compra,))
+            conn.commit()
+            cur.close()
+            
+            print(f"[Inventario] BD Actualizada: claves con orden {id_orden_compra} como VENDIDO.")
+
+        except Exception as e_db:
+                if conn:
+                    conn.rollback()
+                print(f"[!] Error de base de datos en inventario: {e_db}")
+                raise e_db 
+
+        finally:
+            if conn:
+                release_connection(db_name, conn)
+
+    # Si la compra fue fallida registrar la clave como DISPONIBLE
+    elif (estado_pago == "NO APROBADO"):
+        db_name = get_inventory_db_name(region)
+        conn = None
+        try:
+            conn = get_connection(db_name)
+            cur = conn.cursor()
+
+            # Usamos UPDATE
+            query = """
+                UPDATE clave digital
+                SET estado = 'DISPONIBLE' 
+                WHERE id_orden_compra = %s;
+            """
+            cur.execute(query, (id_orden_compra,))
+            conn.commit()
+            cur.close()
+            
+            print(f"[Inventario] BD Actualizada: claves con orden {id_orden_compra} como DISPONIBLE.")
+
+        except Exception as e_db:
+                if conn:
+                    conn.rollback()
+                print(f"[!] Error de base de datos en inventario: {e_db}")
+                raise e_db 
+
+        finally:
+            if conn:
+                    release_connection(db_name, conn)
+
+    else:
+         print(f"[Inventario] Comportamiento inesperado: claves con id de orden {id_orden_compra} recibieron estado no reconocido {estado_pago}.")
+         
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
+
+
 if __name__ == '__main__':
-    print("Iniciando Consumidor del Modulo de Inventario...")
-    time.sleep(2) 
-    iniciar_consumidor('orden.creada', procesar_orden_creada)
+    mis_colas = [
+        # Cola clasica directa para orden creada
+        {
+            "cola": "orden.creada", 
+            "callback": procesar_orden_creada
+        },
+        
+        # Cola compartida para pago procesado
+        {
+            "cola": "cola_inventario_pagos",
+            "exchange": "tienda_exchange",
+            "routing_key": "pago.procesado",
+            "callback": callback_pago_inventario
+        }
+    ]
+    
+    iniciar_multiples_consumidores(mis_colas)

@@ -70,10 +70,10 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
 
         # Publicar evento a RabbitMQ sobre stock agotado
         if stock_restante == 0:
-            payload = json.dumps({
+            payload = {
                 "juego_id": id_juego,
                 "region": region
-            })
+            }
             publicar_evento('inventario.agotado', payload)
             print(f"[Inventario] Evento emitido: {id_juego} agotado en la región {region}.")
 

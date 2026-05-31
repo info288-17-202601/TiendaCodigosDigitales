@@ -1,5 +1,8 @@
+import json
 # Para conectarse a los shards
 from shared.database import get_inventory_db_name, get_connection, release_connection
+from shared.messaging import publicar_evento
+
 
 def reservar_codigo_seguro(id_juego, region, id_orden_compra):
     """
@@ -10,13 +13,10 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
     """
     # Obtener la base de datos correcta según la región
     db_name = get_inventory_db_name(region)
-    print(db_name)
-    print("Llegue aqui 1")
     conn = None
     
     try:
         # Obtener conexion del pool
-        print("Llegue aqui 1")
         conn = get_connection(db_name)
         cur = conn.cursor()
         
@@ -24,25 +24,21 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         query_bloqueo = """
             SELECT id_clave, codigo_serial 
             FROM clave_digital 
-            WHERE id_juego = %s AND estado = 'RESERVADO' 
+            WHERE id_juego = %s AND estado = 'DISPONIBLE' 
             LIMIT 1 
             FOR UPDATE SKIP LOCKED;
         """
         # Pasamos las variables como tupla (%s) para evitar inyección SQL
         cur.execute(query_bloqueo, (id_juego,))
         clave_encontrada = cur.fetchone()
-
-        print("Llegue aqui 2")
         
         # Validar stock
         if not clave_encontrada:
             # No hay codigos disponibles o todos están bloqueados en este milisegundo
-            print("no encontre")
             conn.rollback()
             cur.close()
             return None
         
-        print("LLegue aqui 3")
             
         id_clave = clave_encontrada['id_clave']
         codigo_serial = clave_encontrada['codigo_serial']
@@ -50,17 +46,38 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         # Ejecutar la actualizacion en la fila bloqueada
         query_actualizacion = """
             UPDATE clave_digital 
-            SET estado = 'DISPONIBLE', id_orden_compra = %s 
+            SET estado = 'RESERVADO', id_orden_compra = %s 
             WHERE id_clave = %s;
         """
         cur.execute(query_actualizacion, (id_orden_compra, id_clave))
+
+        # Contar el stock restante
+        query_stock = """
+            SELECT COUNT(id_clave) as stock_restante
+            FROM clave_digital 
+            WHERE id_juego = %s AND estado = 'DISPONIBLE';
+        """
+        cur.execute(query_stock, (id_juego,))
+        resultado_stock = cur.fetchone()
+
+        stock_restante = resultado_stock['stock_restante'] if isinstance(resultado_stock, dict) else resultado_stock[0]
         
-        print("llegue aqui 4")
-        # Confirmar la transacción de forma permanente
+        # Confirmar la transaccion de forma permanente
         conn.commit()
         cur.close()
         
         print(f"[Inventario] Código {codigo_serial} reservado para orden {id_orden_compra} en {db_name}.")
+
+        # Publicar evento a RabbitMQ sobre stock agotado
+        if stock_restante == 0:
+            payload = json.dumps({
+                "juego_id": id_juego,
+                "region": region
+            })
+            publicar_evento('inventario.agotado', payload)
+            print(f"[Inventario] Evento emitido: {id_juego} agotado en la región {region}.")
+
+        # Dar clave encontrada
         return clave_encontrada
 
     except Exception as e:

@@ -34,25 +34,29 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,token
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "APROBADO",
+                "motivo": "",
                 "id_transaccion_pasarela": "txn_987654321"
             }
         case "expirado":
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
-                "motivo": "Timed Out - El pago demoro en ser procesado"
+                "motivo": "Timed Out - El pago demoro en ser procesado",
+                "id_transaccion_pasarela": ""
             }
         case "cancelado":
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO", 
-                "motivo": "Pago Cancelado / No procesado"
+                "motivo": "Pago Cancelado / No procesado",
+                "id_transaccion_pasarela": ""
             }
         case "rechazado":
             payload = {
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
-                "motivo": "Tarjeta rechazada"
+                "motivo": "Tarjeta rechazada",
+                "id_transaccion_pasarela": ""
             }
         case _ :
             payload = {None}

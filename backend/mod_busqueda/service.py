@@ -3,6 +3,7 @@
 import os
 # Importamos Flask (para crear la API web) y jsonify (para responder en formato JSON)
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 # Importamos pysolr (la librería para comunicarnos con Solr)
 import pysolr
 
@@ -14,6 +15,9 @@ from consumer import iniciar_escucha_busqueda
 
 # 1. Inicializamos la aplicación Flask
 app = Flask(__name__)
+
+# Habilitamos CORS para todas las rutas
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 2. Configuramos la conexión a Solr
 # "solr_engine" es el nombre que le dimos al contenedor en el docker-compose.yml
@@ -39,8 +43,8 @@ def buscar_juegos():
     # Si no envían nada, el valor será un texto vacío ''
     nombre_juego = request.args.get('t', '') 
 
-    if nombre_juego == '':
-        # Si el usuario no escribió nada, le traemos todo el catálogo
+    if nombre_juego == '' or nombre_juego == '*:*':
+        # Si el usuario no escribió nada o envía *:*, le traemos todo el catálogo
         query_solr = '*:*'
     else:
         # Si el usuario escribió "splatoon", el backend arma la sintaxis de Solr sola:

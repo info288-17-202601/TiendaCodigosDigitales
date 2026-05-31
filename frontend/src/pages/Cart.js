@@ -10,7 +10,11 @@ const Cart = ({ onNavigate }) => {
   const handleCheckout = async () => {
     setIsProcessing(true);
     try {
-      const result = await api.checkout();
+      const result = await api.checkout({
+        usuario_id: 'user-123',
+        email: 'user@example.com',
+        metodo_pago: 'tarjeta'
+      });
       setCheckoutStatus({ success: true, orderId: result.id_orden_compra });
       await clearCart();
     } catch (e) {

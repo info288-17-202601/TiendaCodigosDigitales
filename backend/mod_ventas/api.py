@@ -1,11 +1,28 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from shared.database import get_connection, release_connection
 from shared.cache import get_carrito, set_carrito
 from mod_ventas.service import procesar_checkout
 
 app = Flask(__name__)
 
+# Habilitamos CORS para todas las rutas
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 # ----- Endpoints ------
+
+# Obtener elemento del carrito
+@app.route("/api/ventas/carrito", methods=["GET"])
+def obtener_carrito():
+    """
+    Obtiene el carrito del usuario.
+    """
+    # Por ahora usamos un usuario_id por defecto
+    # En un caso real, vendría del header o JWT
+    usuario_id = "user-123"
+    
+    carrito = get_carrito(usuario_id)
+    return jsonify(carrito), 200
 
 # Añadir elemento al carrito
 @app.route("/api/ventas/carrito", methods=["POST"])

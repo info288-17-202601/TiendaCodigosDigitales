@@ -6,8 +6,8 @@ from mod_ventas.service import procesar_checkout
 app = Flask(__name__)
 
 # Mocked user for MVP
-MOCK_USER_ID = "9988-7766"
-MOCK_EMAIL = "correo.ejemplo@gmail.com"
+MOCK_USER_ID = "user-123"
+MOCK_EMAIL = "user@example.com"
 
 @app.route('/')
 def home():

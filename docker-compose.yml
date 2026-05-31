@@ -32,8 +32,8 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: adminpassword
     ports:
-      - "5672:5672"                           # Port for microservice communication
-      - "15672:15672"                         # Port for web dashboard
+      - "5672:5672" # Port for microservice communication
+      - "15672:15672" # Port for web dashboard
 
   
   # 4. Backend - Python microservices 

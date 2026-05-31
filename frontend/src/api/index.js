@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = 'http://localhost/api';
 
 export const api = {
   searchGames: async (query = '*:*') => {
@@ -25,7 +25,7 @@ export const api = {
 
   getCart: async () => {
     try {
-      const res = await fetch(`${API_URL}/cart`);
+      const res = await fetch(`${API_URL}/ventas/carrito`);
       if (!res.ok) throw new Error('Failed to fetch cart');
       return await res.json();
     } catch (e) {
@@ -36,7 +36,7 @@ export const api = {
 
   updateCart: async (cartData) => {
     try {
-      const res = await fetch(`${API_URL}/cart`, {
+      const res = await fetch(`${API_URL}/ventas/carrito`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cartData),
@@ -49,13 +49,16 @@ export const api = {
     }
   },
 
-  checkout: async () => {
+  checkout: async (payload) => {
     try {
-      const res = await fetch(`${API_URL}/ventas/comprar`, {
-        method: 'POST'
+      const res = await fetch(`${API_URL}/ventas/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Checkout failed');
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await res.json() : null;
+      if (!res.ok) throw new Error(data?.error || 'Checkout failed');
       return data;
     } catch (e) {
       console.error(e);

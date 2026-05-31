@@ -18,15 +18,19 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = async (game) => {
     const newItems = [...cart.items];
-    const existingIndex = newItems.findIndex(i => i.juego_id === game.id_juego);
+    const juegoId = game.id_juego || game.id;
+    const titulo = Array.isArray(game.titulo) ? game.titulo[0] : game.titulo;
+    const precioBase = Array.isArray(game.precio_base) ? game.precio_base[0] : game.precio_base;
+    const precio = precioBase ?? game.precio ?? game.precio_unitario ?? 0;
+    const existingIndex = newItems.findIndex(i => i.juego_id === juegoId);
     
     if (existingIndex >= 0) {
       newItems[existingIndex].cantidad += 1;
     } else {
       newItems.push({
-        juego_id: game.id_juego,
-        titulo: game.titulo,
-        precio: game.precio,
+        juego_id: juegoId,
+        titulo,
+        precio,
         cantidad: 1
       });
     }
@@ -35,7 +39,13 @@ export const CartProvider = ({ children }) => {
     const newCart = { ...cart, items: newItems, total_estimado: total };
     
     setCart(newCart);
-    await api.updateCart(newCart);
+    await api.updateCart({
+      usuario_id: 'user-123',
+      juego_id: juegoId,
+      cantidad: 1,
+      precio_unitario: precio,
+      titulo
+    });
   };
 
   const removeFromCart = async (juego_id) => {
@@ -44,13 +54,11 @@ export const CartProvider = ({ children }) => {
     const newCart = { ...cart, items: newItems, total_estimado: total };
     
     setCart(newCart);
-    await api.updateCart(newCart);
   };
 
   const clearCart = async () => {
     const newCart = { items: [], total_estimado: 0, region_compra: 'LATAM' };
     setCart(newCart);
-    await api.updateCart(newCart);
   };
 
   return (

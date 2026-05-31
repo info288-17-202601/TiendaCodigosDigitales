@@ -17,8 +17,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_usuarios" <<-EO
         usuario VARCHAR(100) NOT NULL,
         email VARCHAR(150) UNIQUE NOT NULL,
         contrasena VARCHAR(255) NOT NULL,
-        region VARCHAR(20) NOT NULL,
-        disponibilidad_regional JSONB NOT NULL DEFAULT '{}'::jsonb
+        region VARCHAR(20) NOT NULL
     );
 EOSQL
 
@@ -28,7 +27,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
         id_juego VARCHAR(50) PRIMARY KEY,
         titulo VARCHAR(150) NOT NULL,
         plataforma VARCHAR(50) NOT NULL,
-        precio_base DECIMAL(10, 2) NOT NULL
+        precio_base DECIMAL(10, 2) NOT NULL,
+        disponibilidad_regional JSONB NOT NULL DEFAULT '{}'::jsonb
     );
     -- Insertar un producto de prueba
     INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) 

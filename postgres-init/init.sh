@@ -17,7 +17,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_usuarios" <<-EO
         usuario VARCHAR(100) NOT NULL,
         email VARCHAR(150) UNIQUE NOT NULL,
         contrasena VARCHAR(255) NOT NULL,
-        region VARCHAR(20) NOT NULL
+        region VARCHAR(20) NOT NULL,
+        disponibilidad_regional JSONB NOT NULL DEFAULT '{}'::jsonb
     );
 EOSQL
 
@@ -29,23 +30,29 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
         plataforma VARCHAR(50) NOT NULL,
         precio_base DECIMAL(10, 2) NOT NULL
     );
-    -- Insertar un producto de prueba para que puedan probar mañana
-    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) 
-    VALUES ('splatoon-3-ext', 'Splatoon 3: Expansion Pass', 'Nintendo Switch', 19990.00);
+    -- Insertar un producto de prueba
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) 
+    VALUES (
+        'splatoon-3-ext', 
+        'Splatoon 3: Expansion Pass', 
+        'Nintendo Switch', 
+        19990.00, 
+        '{"LATAM": true, "US": true, "EU": false}'::jsonb
+    );
 
-        -- Más juegos para el catálogo de Nintendo Switch
-    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) VALUES 
-    ('splatoon-3', 'Splatoon 3', 'Nintendo Switch', 49990.00),
-    ('mario-odyssey', 'Super Mario Odyssey', 'Nintendo Switch', 49990.00),
-    ('zelda-totk', 'The Legend of Zelda: Tears of the Kingdom', 'Nintendo Switch', 59990.00),
-    ('mario-kart-8', 'Mario Kart 8 Deluxe', 'Nintendo Switch', 49990.00);
+    -- Más juegos para el catálogo de Nintendo Switch
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) VALUES 
+    ('splatoon-3', 'Splatoon 3', 'Nintendo Switch', 49990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb),
+    ('mario-odyssey', 'Super Mario Odyssey', 'Nintendo Switch', 49990.00, '{"LATAM": false, "US": true, "EU": true}'::jsonb),
+    ('zelda-totk', 'The Legend of Zelda: Tears of the Kingdom', 'Nintendo Switch', 59990.00, '{"LATAM": true, "US": false, "EU": true}'::jsonb),
+    ('mario-kart-8', 'Mario Kart 8 Deluxe', 'Nintendo Switch', 49990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb);
 
     -- Juegos para el catálogo de PlayStation 5 (Sony)
-    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) VALUES 
-    ('gow-ragnarok', 'God of War Ragnarök', 'PlayStation 5', 54990.00),
-    ('spiderman-2', 'Marvel''s Spider-Man 2', 'PlayStation 5', 59990.00),
-    ('tlou-part1', 'The Last of Us Part I', 'PlayStation 5', 49990.00),
-    ('elden-ring-ps5', 'Elden Ring', 'PlayStation 5', 44990.00);
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) VALUES 
+    ('gow-ragnarok', 'God of War Ragnarök', 'PlayStation 5', 54990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb),
+    ('spiderman-2', 'Marvel''s Spider-Man 2', 'PlayStation 5', 59990.00, '{"LATAM": true, "US": false, "EU": false}'::jsonb),
+    ('tlou-part1', 'The Last of Us Part I', 'PlayStation 5', 49990.00, '{"LATAM": false, "US": false, "EU": false}'::jsonb), 
+    ('elden-ring-ps5', 'Elden Ring', 'PlayStation 5', 44990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb);
 EOSQL
 
 # 4. Sales DB tables

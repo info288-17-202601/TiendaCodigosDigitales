@@ -2,6 +2,7 @@ import json
 import time
 from shared.messaging import iniciar_multiples_consumidores
 from shared.database import get_connection, release_connection
+from shared.cache import get_carrito, set_carrito
 
 # ----- Callbacks -----
 
@@ -10,6 +11,7 @@ def callback_pago_ventas(ch, method, properties, body):
     id_orden_compra = payload.get('id_orden_compra')
     metodo_pago = payload.get('metodo_pago')
     estado_pago = payload.get('estado_pago')
+    usuario_id = payload.get('usuario_id')
 
     # Si la compra fue exitosa registrar la orden como PAGADO
     if (estado_pago == "APROBADO"):
@@ -30,6 +32,15 @@ def callback_pago_ventas(ch, method, properties, body):
             cur.close()
             
             print(f"[Ventas] BD Actualizada: Orden {id_orden_compra} como PAGADO.")
+
+            # Liberar carrito
+            if usuario_id:
+                carrito = get_carrito(usuario_id)
+                if carrito:
+                    carrito['items'] = []
+                    carrito['total_estimado'] = 0
+                    set_carrito(usuario_id, carrito)
+                    print(f"[Ventas] Carrito liberado para el usuario {usuario_id}")
 
         except Exception as e_db:
                 if conn:
@@ -131,6 +142,7 @@ def procesar_inventario_fallido(ch, method, properties, body):
 
     except Exception as e:
         print(f"[!] Error el consumidor de fallos de ventas: {e}")
+
 
 if __name__ == '__main__':
     mis_colas = [

@@ -1,22 +1,31 @@
-import './App.css';
+import React, { useState } from 'react';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import GameDetail from './pages/GameDetail';
+import Cart from './pages/Cart';
+import { CartProvider } from './context/CartContext';
 
 function App() {
+  const [currentView, setCurrentView] = useState('home');
+  const [selectedGameId, setSelectedGameId] = useState(null);
+
+  const navigate = (view, payload = null) => {
+    setCurrentView(view);
+    if (view === 'detail') {
+      setSelectedGameId(payload);
+    }
+    window.scrollTo(0, 0);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <CartProvider>
+      <Navbar onNavigate={navigate} currentView={currentView} />
+      <main className="main-content container">
+        {currentView === 'home' && <Home onNavigate={navigate} />}
+        {currentView === 'detail' && <GameDetail gameId={selectedGameId} onNavigate={navigate} />}
+        {currentView === 'cart' && <Cart onNavigate={navigate} />}
+      </main>
+    </CartProvider>
   );
 }
 

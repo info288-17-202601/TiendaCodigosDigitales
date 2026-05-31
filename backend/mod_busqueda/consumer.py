@@ -88,7 +88,7 @@ def callback_busqueda(ch, method, properties, body):
             conn.close()
 
 def iniciar_escucha_busqueda():
-    iniciar_consumidor('eventos_busqueda', callback_busqueda)
+    iniciar_consumidor('inventario.agotado', callback_busqueda)
 
 if __name__ == '__main__':
     iniciar_escucha_busqueda()

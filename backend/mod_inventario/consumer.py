@@ -28,10 +28,12 @@ def procesar_orden_creada(ch, method, properties, body):
         print(f"[*] Procesando orden {id_orden_compra} con {len(items)} items | Region: {region} | Metodo de pago: {metodo_pago}")
 
         reservas_exitosas = []
+        juegos_sin_stock = []
 
         # Iterar sobre todos los elementos del carrito
         for item in items:
             juego_id = item.get('juego_id')
+            juego_titulo = item.get('titulo')
             resultado_reserva = reservar_codigo_seguro(juego_id, region, id_orden_compra)
 
             if resultado_reserva:
@@ -39,38 +41,44 @@ def procesar_orden_creada(ch, method, properties, body):
                 resultado_reserva['juego_id'] = juego_id
                 reservas_exitosas.append(resultado_reserva)
             else:
-                # COMPENSACION: Revertir todas las reservas anteriores de esta orden.
-                print(f"[Inventario] Fallo al reservar '{juego_id}'. Iniciando rollback de compensacion...")
-                for reserva in reservas_exitosas:
-                    liberar_codigo_seguro(reserva['id_clave'], region)
-                print(f"[Inventario] Rollback completo")        
-        
+                juegos_sin_stock.append({"juego_id": juego_id, "titulo": juego_titulo})   
                 
-                # Emitir evento de fallo total
-                evento_fallo = {
-                    "id_orden_compra": id_orden_compra,
-                    "usuario_id": usuario_id,
-                    "usuario_email": usuario_email,
-                    "metodo_pago": metodo_pago,
-                    "motivo": f"OUT_OF_STOCK_{juego_id}"
-                }
-                publicar_evento('inventario.fallido', evento_fallo)
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-                return # Detener el procesamiento de esta orden
+            
+        # ¿Hubo al menos un fallo de stock?
+        if len(juegos_sin_stock) > 0:
+            
+            # Revertir las reservas que si tuvieron exito
+            print(f"[Inventario] Falto stock para los juegos: {juegos_sin_stock}. Iniciando rollback...")
+            for reserva in reservas_exitosas:
+                liberar_codigo_seguro(reserva['id_clave'], region)
+            print(f"[Inventario] Rollback completo para la orden {id_orden_compra}.")        
+            
+            # Emitir evento de fallo total con la lista de juegos agotados
+            evento_fallo = {
+                "id_orden_compra": id_orden_compra,
+                "usuario_id": usuario_id,
+                "usuario_email": usuario_email,
+                "metodo_pago": metodo_pago,
+                "motivo": "OUT_OF_STOCK",
+                "juegos_sin_stock": juegos_sin_stock # Enviamos la lista completa al Modulo de Ventas
+            }
+            publicar_evento('inventario.fallido', evento_fallo)
+            print(f"[Inventario] Evento 'inventario.fallido' publicado con {len(juegos_sin_stock)} juegos sin stock.")
 
-        # Si el bucle termina sin retornos, todos los items fueron reservados con exito
-        evento_exito = {
-            "id_orden_compra": id_orden_compra,
-            "usuario_id": usuario_id,
-            "region": region,
-            "usuario_email": usuario_email,
-            "items": reservas_exitosas, 
-            "estado_reserva": "EXITO",
-            "metodo_pago": metodo_pago,
-            "monto_a_cobrar": total_estimado,
-        }
-        publicar_evento('inventario.reservado', evento_exito)
-        print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")
+        # Si la lista de fallos esta vacia
+        else:
+            evento_exito = {
+                "id_orden_compra": id_orden_compra,
+                "usuario_id": usuario_id,
+                "region": region,
+                "usuario_email": usuario_email,
+                "items": reservas_exitosas, 
+                "estado_reserva": "EXITO",
+                "metodo_pago": metodo_pago,
+                "monto_a_cobrar": total_estimado,
+            }
+            publicar_evento('inventario.reservado', evento_exito)
+            print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")
 
         # Confirmacion Critica
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -96,7 +104,7 @@ def callback_pago_inventario(ch, method, properties, body):
 
             # Usamos UPDATE
             query = """
-                UPDATE clave digital
+                UPDATE clave_digital
                 SET estado = 'VENDIDO' 
                 WHERE id_orden_compra = %s;
             """
@@ -126,8 +134,8 @@ def callback_pago_inventario(ch, method, properties, body):
 
             # Usamos UPDATE
             query = """
-                UPDATE clave digital
-                SET estado = 'DISPONIBLE' 
+                UPDATE clave_digital
+                SET estado = 'DISPONIBLE', id_orden_compra = NULL 
                 WHERE id_orden_compra = %s;
             """
             cur.execute(query, (id_orden_compra,))

@@ -14,14 +14,16 @@ def procesar_orden_creada(ch, method, properties, body):
         usuario_email = datos_orden.get("email")
         region = datos_orden.get('region', 'LATAM')
         items = datos_orden.get('items', [])
+        metodo_pago = datos_orden.get('metodo_pago')
         total_estimado = datos_orden.get('total_estimado')
+
         
         if not items:
             print(f"[Inventario] Orden {id_orden_compra} rechazada: Carrito vacio.")
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
             
-        print(f"[*] Procesando orden {id_orden_compra} con {len(items)} items | Region: {region}")
+        print(f"[*] Procesando orden {id_orden_compra} con {len(items)} items | Region: {region} | Metodo de pago: {metodo_pago}")
 
         reservas_exitosas = []
 
@@ -47,6 +49,7 @@ def procesar_orden_creada(ch, method, properties, body):
                     "id_orden_compra": id_orden_compra,
                     "usuario_id": usuario_id,
                     "usuario_email": usuario_email,
+                    "metodo_pago": metodo_pago,
                     "motivo": f"OUT_OF_STOCK_{juego_id}"
                 }
                 publicar_evento('inventario.fallido', evento_fallo)
@@ -58,9 +61,10 @@ def procesar_orden_creada(ch, method, properties, body):
             "id_orden_compra": id_orden_compra,
             "usuario_id": usuario_id,
             "usuario_email": usuario_email,
-            "items": reservas_exitosas, # Ahora enviamos una lista completa
+            "items": reservas_exitosas, 
             "estado_reserva": "EXITO",
-            "monto_a_cobrar": total_estimado
+            "metodo_pago": metodo_pago,
+            "monto_a_cobrar": total_estimado,
         }
         publicar_evento('inventario.reservado', evento_exito)
         print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")

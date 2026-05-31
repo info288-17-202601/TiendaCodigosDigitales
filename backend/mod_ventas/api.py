@@ -59,12 +59,12 @@ def iniciar_checkout():
     data = request.get_json()
     
     # Validacion manual de que traiga el usuario
-    campos_requeridos = ["usuario_id", "email"]
+    campos_requeridos = ["usuario_id", "email","metodo_pago"]
     if not data or not all(campo in data for campo in campos_requeridos):
         return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
 
     # Utilizar servicio del modulo de ventas
-    id_orden = procesar_checkout(data['usuario_id'], data['email'])
+    id_orden = procesar_checkout(data['usuario_id'], data['email'], data['metodo_pago'])
     
     # Si ocurre un error en el servicio especificamente
     if not id_orden:

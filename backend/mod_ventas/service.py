@@ -4,7 +4,7 @@ from shared.cache import redis_client
 from shared.messaging import publicar_evento
 from shared.database import get_connection, release_connection
 
-def procesar_checkout(usuario_id, email):
+def procesar_checkout(usuario_id, email, metodo_pago):
     """
     Simula la recepcion de una solicitud de compra.
     Lee el carrito de Redis respetando el contrato definido, emite el evento y limpia la cache.
@@ -45,10 +45,10 @@ def procesar_checkout(usuario_id, email):
             
             # Guardamos el total estimado en total_pagado temporalmente
             query_insert = """
-                INSERT INTO orden_compra (id_orden_compra, id_usuario, total_pagado, estado_pago) 
-                VALUES (%s, %s, %s, 'PENDIENTE');
+                INSERT INTO orden_compra (id_orden_compra, id_usuario, metodo_pago, total_pagado, estado_pago) 
+                VALUES (%s, %s, %s, %s, 'PENDIENTE');
             """
-            cur.execute(query_insert, (id_orden_compra, usuario_id, total_estimado))
+            cur.execute(query_insert, (id_orden_compra, usuario_id, metodo_pago, total_estimado))
             conn.commit()
             cur.close()
             print(f"[Ventas] BD: Orden {id_orden_compra} registrada como PENDIENTE.")
@@ -69,7 +69,8 @@ def procesar_checkout(usuario_id, email):
             "email": email,
             "region": region_compra,
             "items": items_carrito,
-            "total_estimado": total_estimado
+            "metodo_pago": metodo_pago,
+            "total_estimado": total_estimado,
         }
 
         # Publicar el evento

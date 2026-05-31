@@ -13,10 +13,12 @@ def procesar_inventario_fallido(ch, method, properties, body):
         datos_fallo = json.loads(body)
         id_orden_compra = datos_fallo.get('id_orden_compra')
         usuario_id = datos_fallo.get('usuario_id')
+        metodo_pago = datos_fallo.get('metodo_pago')
         motivo = datos_fallo.get('motivo')
 
         print(f"[Ventas] Reaccion del Modulo de Ventas al fallo de la orden {id_orden_compra}")
         print(f"         - Usuario afectado: {usuario_id}")
+        print(f"         - Metodo de pago: {metodo_pago}")
         print(f"         - Motivo del rechazo: {motivo}")
 
         # Insercion en la Base de Datos de Ventas (Historial de Fallo)

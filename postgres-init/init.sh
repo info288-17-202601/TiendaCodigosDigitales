@@ -61,6 +61,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_ventas" <<-EOSQ
         id_orden_compra VARCHAR(50) PRIMARY KEY,
         id_usuario VARCHAR(50) NOT NULL,
         fecha_transaccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metodo_pago VARCHAR(50) NOT NULL,
         total_pagado DECIMAL(10, 2) NOT NULL,
         estado_pago VARCHAR(20) NOT NULL 
         -- Estados: PENDIENTE, PAGADO, COMPENSADO, FALLIDO

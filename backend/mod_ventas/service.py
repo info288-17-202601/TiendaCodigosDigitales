@@ -12,7 +12,7 @@ def procesar_checkout(usuario_id, email, metodo_pago):
     try:
         # Leer el carrito de Redis con la clave del contrato
         print("Llegue aqui")
-        clave_redis = f"cart:{usuario_id}"
+        clave_redis = f"carrito:{usuario_id}"
         carrito_raw = redis_client.get(clave_redis)
 
         print("Llegue aqui")

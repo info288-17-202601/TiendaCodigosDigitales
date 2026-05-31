@@ -48,7 +48,6 @@ services:
       - MAX_CACHE_POOL_CONNS=50
     ports:
       - "5050:5050"
-      - "5001:5001"
     volumes:                                  # For hot reloading
       - ./backend:/app
     depends_on:
@@ -75,6 +74,8 @@ services:
     depends_on:
       - backend_api
       - frontend_app
+      - ventas_api
+      - inventario_api
 
 # 7. Motor de Búsqueda - Apache Solr
   solr_engine:
@@ -104,6 +105,103 @@ services:
     depends_on:
       - solr_engine
       - postgres_db # Espera a que la BD despierte
+
+# 9. Modulo de ventas
+  ventas_api:
+    build: 
+      context: ./backend
+    container_name: ventas_api
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+      - USER_SESSION_EXPIRATION_TIME=3600
+      - MAX_DB_POOL_CONNS=5
+      - MAX_CACHE_POOL_CONNS=10
+    ports:
+      - "5001:5001" 
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_ventas.api
+    depends_on:
+      - postgres_db
+      - redis_cache
+      - rabbitmq_broker
+
+  ventas_worker:
+    build: 
+      context: ./backend
+    container_name: ventas_errores
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+      - USER_SESSION_EXPIRATION_TIME=3600
+      - MAX_DB_POOL_CONNS=5
+      - MAX_CACHE_POOL_CONNS=10
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_ventas.consumer
+    depends_on:
+      - postgres_db
+      - redis_cache
+      - rabbitmq_broker
+
+
+# 9. Modulo de inventario
+  inventario_api:
+    build: 
+      context: ./backend
+    container_name: inventario_api
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+      - USER_SESSION_EXPIRATION_TIME=3600
+      - MAX_DB_POOL_CONNS=5
+      - MAX_CACHE_POOL_CONNS=10
+    ports:
+      - "5010:5010" 
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_inventario.api
+    depends_on:
+      - postgres_db
+      - redis_cache
+      - rabbitmq_broker
+
+  inventario_worker:
+    build: 
+      context: ./backend
+    container_name: inventario_worker
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+      - USER_SESSION_EXPIRATION_TIME=3600
+      - MAX_DB_POOL_CONNS=5
+      - MAX_CACHE_POOL_CONNS=10
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_inventario.consumer
+    depends_on:
+      - postgres_db
+      - redis_cache
+      - rabbitmq_broker
+
+
 
 volumes:
   pg_data:

@@ -11,8 +11,11 @@ def procesar_checkout(usuario_id, email):
     """
     try:
         # Leer el carrito de Redis con la clave del contrato
+        print("Llegue aqui")
         clave_redis = f"cart:{usuario_id}"
         carrito_raw = redis_client.get(clave_redis)
+
+        print("Llegue aqui")
         
         # Si no tiene nada
         if not carrito_raw:

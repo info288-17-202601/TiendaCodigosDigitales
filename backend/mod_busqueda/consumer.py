@@ -31,11 +31,12 @@ def callback_busqueda(ch, method, properties, body):
         print(f" [x] Búsqueda recibió evento: {mensaje}", flush=True)
 
         id_juego = mensaje.get('juego_id') 
-        region_agotada = mensaje.get('region')
+        region = mensaje.get('region')
+        motivo = mensaje.get('motivo')
 
-        # 2. Lógica para evento de Stock Agotado por Región
-        if id_juego and region_agotada:
-            print(f" [*] Procesando agotamiento de '{id_juego}' en la región {region_agotada}...", flush=True)
+        # 2. Lógica para evento de actualizar Stock por Región
+        if id_juego and region:
+            print(f" [*] Procesando agotamiento de '{id_juego}' en la región {region}...", flush=True)
             
             # ACTUALIZAR POSTGRESQL 
             conn = obtener_conexion_db()
@@ -48,7 +49,10 @@ def callback_busqueda(ch, method, properties, body):
             if resultado_db:
                 # Modificamos el JSON: Ponemos en "false" la región que se agotó
                 json_disponibilidad = resultado_db['disponibilidad_regional']
-                json_disponibilidad[region_agotada] = False 
+                if motivo == 'AGOTADO':
+                    json_disponibilidad[region] = False 
+                else:
+                    json_disponibilidad[region] = True  # Si el motivo no es agotado, asumimos que se reabasteció
                 
                 # Guardamos el JSON actualizado en Postgres
                 cur.execute(
@@ -56,7 +60,7 @@ def callback_busqueda(ch, method, properties, body):
                     (json.dumps(json_disponibilidad), id_juego)
                 )
                 conn.commit()
-                print(f" [v] Postgres actualizado: {id_juego} ahora tiene {region_agotada}: false", flush=True)
+                print(f" [v] Postgres actualizado: {id_juego} ahora tiene {region}: {json_disponibilidad[region]}", flush=True)
                 
                 # ACTUALIZAR SOLR (El buscador) 
                 resultados_solr = solr.search(f'id:{id_juego}')
@@ -88,7 +92,7 @@ def callback_busqueda(ch, method, properties, body):
             conn.close()
 
 def iniciar_escucha_busqueda():
-    iniciar_consumidor('inventario.agotado', callback_busqueda)
+    iniciar_consumidor('inventario.cambio_stock', callback_busqueda)
 
 if __name__ == '__main__':
     iniciar_escucha_busqueda()

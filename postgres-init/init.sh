@@ -27,11 +27,32 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
         id_juego VARCHAR(50) PRIMARY KEY,
         titulo VARCHAR(150) NOT NULL,
         plataforma VARCHAR(50) NOT NULL,
-        precio_base DECIMAL(10, 2) NOT NULL
+        precio_base DECIMAL(10, 2) NOT NULL,
+        disponibilidad_regional JSONB NOT NULL DEFAULT '{}'::jsonb
     );
-    -- Insertar un producto de prueba para que puedan probar mañana
-    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base) 
-    VALUES ('splatoon-3-ext', 'Splatoon 3: Expansion Pass', 'Nintendo Switch', 19990.00);
+    -- Insertar un producto de prueba
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) 
+    VALUES (
+        'splatoon-3-ext', 
+        'Splatoon 3: Expansion Pass', 
+        'Nintendo Switch', 
+        19990.00, 
+        '{"LATAM": true, "US": true, "EU": false}'::jsonb
+    );
+
+    -- Más juegos para el catálogo de Nintendo Switch
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) VALUES 
+    ('splatoon-3', 'Splatoon 3', 'Nintendo Switch', 49990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb),
+    ('mario-odyssey', 'Super Mario Odyssey', 'Nintendo Switch', 49990.00, '{"LATAM": false, "US": true, "EU": true}'::jsonb),
+    ('zelda-totk', 'The Legend of Zelda: Tears of the Kingdom', 'Nintendo Switch', 59990.00, '{"LATAM": true, "US": false, "EU": true}'::jsonb),
+    ('mario-kart-8', 'Mario Kart 8 Deluxe', 'Nintendo Switch', 49990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb);
+
+    -- Juegos para el catálogo de PlayStation 5 (Sony)
+    INSERT INTO catalogo (id_juego, titulo, plataforma, precio_base, disponibilidad_regional) VALUES 
+    ('gow-ragnarok', 'God of War Ragnarök', 'PlayStation 5', 54990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb),
+    ('spiderman-2', 'Marvel''s Spider-Man 2', 'PlayStation 5', 59990.00, '{"LATAM": true, "US": false, "EU": false}'::jsonb),
+    ('tlou-part1', 'The Last of Us Part I', 'PlayStation 5', 49990.00, '{"LATAM": false, "US": false, "EU": false}'::jsonb), 
+    ('elden-ring-ps5', 'Elden Ring', 'PlayStation 5', 44990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb);
 EOSQL
 
 # 4. Sales DB tables
@@ -65,6 +86,7 @@ EOSQL
 # 6. Profile DB tables
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQL
     CREATE TABLE perfil_pago (
+        id_perfil SERIAL PRIMARY KEY,
         id_usuario VARCHAR(50) NOT NULL,
         tipo_tarjeta VARCHAR(50) NOT NULL,
         token_pago VARCHAR(100) NOT NULL,

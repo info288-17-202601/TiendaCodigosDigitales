@@ -51,6 +51,8 @@ services:
       - "5050:5050"
     volumes:
       # For hot reloading
+      - "5001:5001"
+    volumes:                                  # For hot reloading
       - ./backend:/app
     depends_on:
       - postgres_db
@@ -105,6 +107,7 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=adminpassword
       - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
     ports:
       - "5002:5002"
     volumes:

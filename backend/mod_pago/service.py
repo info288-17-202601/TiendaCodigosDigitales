@@ -1,10 +1,11 @@
 # Procesa las compras
 import time
 from random import randint
+from shared.messaging import iniciar_consumidor
 
-def verificar_perfil_usuario(usuario:str):
-    # No se me ocurre como hacer la conexion AAAAAAAAAA
-    return
+
+def iniciar_escucha():
+    iniciar_consumidor('orden.creada',procesar_pago)
 
 def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,token:str):
     print(f"Realizando compra de {monto}\nUserID : {usuario}\nCorreo : {correo}")
@@ -35,21 +36,24 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,token
             }
         case "expirado":
             payload = {
-                "id_orden_compra": id_orden_compra, 
+                "id_orden_compra": id_orden_compra,
+                "estado_pago": "NO APROBADO",
                 "motivo": "Timed Out - El pago demoro en ser procesado"
             }
         case "cancelado":
             payload = {
-                "id_orden_compra": id_orden_compra, 
+                "id_orden_compra": id_orden_compra,
+                "estado_pago": "NO APROBADO", 
                 "motivo": "Pago Cancelado / No procesado"
             }
         case "rechazado":
             payload = {
-                "id_orden_compra": id_orden_compra, 
+                "id_orden_compra": id_orden_compra,
+                "estado_pago": "NO APROBADO",
                 "motivo": "Tarjeta rechazada"
             }
         case _ :
             payload = {None}
 
 
-    return payload, estado
+    return payload

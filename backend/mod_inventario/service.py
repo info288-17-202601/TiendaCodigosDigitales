@@ -1,5 +1,8 @@
+import json
 # Para conectarse a los shards
 from shared.database import get_inventory_db_name, get_connection, release_connection
+from shared.messaging import publicar_evento
+
 
 def reservar_codigo_seguro(id_juego, region, id_orden_compra):
     """
@@ -47,12 +50,34 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
             WHERE id_clave = %s;
         """
         cur.execute(query_actualizacion, (id_orden_compra, id_clave))
+
+        # Contar el stock restante
+        query_stock = """
+            SELECT COUNT(id_clave) as stock_restante
+            FROM clave_digital 
+            WHERE id_juego = %s AND estado = 'DISPONIBLE';
+        """
+        cur.execute(query_stock, (id_juego,))
+        resultado_stock = cur.fetchone()
+
+        stock_restante = resultado_stock['stock_restante'] if isinstance(resultado_stock, dict) else resultado_stock[0]
         
-        # Confirmar la transacción de forma permanente
+        # Confirmar la transaccion de forma permanente
         conn.commit()
         cur.close()
         
         print(f"[Inventario] Código {codigo_serial} reservado para orden {id_orden_compra} en {db_name}.")
+
+        # Publicar evento a RabbitMQ sobre stock agotado
+        if stock_restante == 0:
+            payload = json.dumps({
+                "juego_id": id_juego,
+                "region": region
+            })
+            publicar_evento('inventario.agotado', payload)
+            print(f"[Inventario] Evento emitido: {id_juego} agotado en la región {region}.")
+
+        # Dar clave encontrada
         return clave_encontrada
 
     except Exception as e:

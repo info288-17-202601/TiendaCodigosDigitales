@@ -15,10 +15,10 @@ session:\<token>
 "ultimo_acceso": "2026-03-31T20:40:00Z"
 }
 
-## Cart 
+## Carrito
 
 ### Key
-cart\:<usuario_id>
+carrito\:<usuario_id>
 
 ### Value
 {

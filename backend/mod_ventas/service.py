@@ -1,6 +1,6 @@
 import uuid
 import json
-from shared.cache import redis_client
+from shared.cache import redis_client, get_carrito
 from shared.messaging import publicar_evento
 from shared.database import get_connection, release_connection
 
@@ -11,22 +11,18 @@ def procesar_checkout(usuario_id, email, metodo_pago):
     """
     try:
         # Leer el carrito de Redis con la clave del contrato
-        print("Llegue aqui")
-        clave_redis = f"cart:{usuario_id}"
-        carrito_raw = redis_client.get(clave_redis)
-
-        print("Llegue aqui")
+        clave_redis = f"carrito:{usuario_id}"
+        carrito = get_carrito(usuario_id)
         
         # Si no tiene nada
-        if not carrito_raw:
+        if not carrito:
             print(f"[Ventas] Checkout rechazado. El carrito del usuario {usuario_id} esta vacio.")
             return False
             
         # Deserializar el objeto completo segun el contrato
-        datos_carrito = json.loads(carrito_raw)
-        items_carrito = datos_carrito.get("items", [])
-        region_compra = datos_carrito.get("region_compra", "LATAM")   # LATAM como Fallback
-        total_estimado = datos_carrito.get("total_estimado", 0)
+        items_carrito = carrito.get("items", [])
+        region_compra = carrito.get("region_compra", "LATAM")   # LATAM como Fallback
+        total_estimado = carrito.get("total_estimado", 0)
         
         if not items_carrito:
             print(f"[Ventas] Checkout rechazado. El carrito no tiene items.")

@@ -139,7 +139,7 @@ def historial_compras_usuario(usuario_id):
     try:
         cur = conn.cursor()
         query = """
-            SELECT id_orden_compra, fecha_transaccion, total_pagado, estado_pago 
+            SELECT id_orden_compra, fecha_transaccion, metodo_pago, total_pagado, estado_pago 
             FROM orden_compra 
             WHERE id_usuario = %s 
             ORDER BY fecha_transaccion DESC
@@ -159,6 +159,15 @@ def historial_compras_usuario(usuario_id):
     finally:
         release_connection(db_name, conn)
 
+# Obtener el carrito actual
+@app.route("/api/ventas/carrito/usuario/<usuario_id>", methods=["GET"])
+def carrito_usuario(usuario_id):
+    """
+    Devuelve el estado actual del carrito del usuario <usuario_id>
+    """
+    return jsonify(get_carrito(usuario_id), 200)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
+

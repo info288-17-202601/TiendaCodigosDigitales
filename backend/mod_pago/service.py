@@ -35,6 +35,7 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,regio
     match estado:  
         case "aprovado":
             payload = {
+                "id_usuario":usuario,
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "APROBADO",
                 "motivo": "",
@@ -43,6 +44,7 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,regio
             }
         case "expirado":
             payload = {
+                "id_usuario":usuario,
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
                 "motivo": "Timed Out - El pago demoro en ser procesado",
@@ -51,6 +53,7 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,regio
             }
         case "cancelado":
             payload = {
+                "id_usuario":usuario,
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO", 
                 "motivo": "Pago Cancelado / No procesado",
@@ -59,6 +62,7 @@ def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,regio
             }
         case "rechazado":
             payload = {
+                "id_usuario":usuario,
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
                 "motivo": "Tarjeta rechazada",

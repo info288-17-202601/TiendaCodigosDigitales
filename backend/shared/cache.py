@@ -40,20 +40,20 @@ def get_sesion(token):
     return None
 
 
-# ----- SHOPPING CART -----
+# ----- Carrito -----
 
 # Guarda el estado del carrito del usuario
 def set_carrito(usuario_id, datos_carrito):
     """Guarda el estado del carrito de compras - Sin expiracion"""
-    clave = f"cart:{usuario_id}"
+    clave = f"carrito:{usuario_id}"
     redis_client.set(clave, json.dumps(datos_carrito))
 
 # Obtiene y deserializa el carrito del usuario
 def get_carrito(usuario_id):
     """Obtiene y deserializa el carrito de compras"""
-    datos = redis_client.get(f"cart:{usuario_id}")
+    datos = redis_client.get(f"carrito:{usuario_id}")
     if datos:
         return json.loads(datos)
-    return {"items": [], "total_estimado": 0, "region_compra": "LATAM", "total_estimado" : 0}
+    return {"items": [], "total_estimado": 0, "region_compra": "LATAM"}
 
 

@@ -10,13 +10,10 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
     """
     # Obtener la base de datos correcta según la región
     db_name = get_inventory_db_name(region)
-    print(db_name)
-    print("Llegue aqui 1")
     conn = None
     
     try:
         # Obtener conexion del pool
-        print("Llegue aqui 1")
         conn = get_connection(db_name)
         cur = conn.cursor()
         
@@ -24,25 +21,21 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         query_bloqueo = """
             SELECT id_clave, codigo_serial 
             FROM clave_digital 
-            WHERE id_juego = %s AND estado = 'RESERVADO' 
+            WHERE id_juego = %s AND estado = 'DISPONIBLE' 
             LIMIT 1 
             FOR UPDATE SKIP LOCKED;
         """
         # Pasamos las variables como tupla (%s) para evitar inyección SQL
         cur.execute(query_bloqueo, (id_juego,))
         clave_encontrada = cur.fetchone()
-
-        print("Llegue aqui 2")
         
         # Validar stock
         if not clave_encontrada:
             # No hay codigos disponibles o todos están bloqueados en este milisegundo
-            print("no encontre")
             conn.rollback()
             cur.close()
             return None
         
-        print("LLegue aqui 3")
             
         id_clave = clave_encontrada['id_clave']
         codigo_serial = clave_encontrada['codigo_serial']
@@ -50,12 +43,11 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         # Ejecutar la actualizacion en la fila bloqueada
         query_actualizacion = """
             UPDATE clave_digital 
-            SET estado = 'DISPONIBLE', id_orden_compra = %s 
+            SET estado = 'RESERVADO', id_orden_compra = %s 
             WHERE id_clave = %s;
         """
         cur.execute(query_actualizacion, (id_orden_compra, id_clave))
         
-        print("llegue aqui 4")
         # Confirmar la transacción de forma permanente
         conn.commit()
         cur.close()

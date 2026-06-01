@@ -1,7 +1,7 @@
 """ service.py: Es la API web (Flask). Se encarga de responder a las búsquedas de los usuarios """
 
 import os
-# Importamos Flask (para crear la API web) y jsonify (para responder en formato JSON)
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 # Importamos pysolr (la librería para comunicarnos con Solr)
@@ -75,7 +75,7 @@ def buscar_por_plataforma():
     # Atrapamos el parámetro 'p' de la URL. Ejemplo: /buscarPorPlataforma?p=Nintendo
     plataforma_buscada = request.args.get('p', '') 
 
-    # --- TRADUCCIÓN PARA SOLR ---
+    
     if plataforma_buscada == '':
         # Si no especifican plataforma, trae todo el catálogo
         query_solr = '*:*'
@@ -83,7 +83,7 @@ def buscar_por_plataforma():
         # Forzamos a Solr a buscar coincidencias parciales solo en el campo 'plataforma'
         # Esto se traducirá como: plataforma:*Nintendo*
         query_solr = f'plataforma:*{plataforma_buscada}*'
-    # -----------------------------
+    
 
     try:
         # Ejecutamos la búsqueda en Solr
@@ -138,7 +138,5 @@ if __name__ == '__main__':
     hilo_consumidor.start()
     print("[*] Hilo del consumidor RabbitMQ iniciado en segundo plano.", flush=True)
 
-    # Arrancamos Flask
-    # Según la documentación, este módulo va en el puerto 5002
-    # host='0.0.0.0' permite que Docker exponga el puerto hacia afuera
+
     app.run(host='0.0.0.0', port=5002)

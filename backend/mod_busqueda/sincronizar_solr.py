@@ -1,6 +1,6 @@
 """ cargamos catalogo a Solr desde Postgres al iniciar el contenedor de búsqueda. 
 Esto es para tener datos en Solr desde el arranque """
-# Ejecutar con: docker exec -it python_backend python /app/mod_busqueda/sincronizar_solr.py
+# Ejecutar con: docker exec -it python_search python /app/mod_busqueda/sincronizar_solr.py
 
 import json
 import os

@@ -190,6 +190,7 @@ services:
       - redis_cache
       - rabbitmq_broker
 
+# 10. Worker de inventario
   inventario_worker:
     build: 
       context: ./backend
@@ -212,7 +213,28 @@ services:
       - redis_cache
       - rabbitmq_broker
 
-
+  # 11. Modulo de administración para añadir stock
+  modulo_admin:
+      build:
+        context: ./backend
+        dockerfile: Dockerfile
+      container_name: admin_module
+      command: python mod_admin/app.py
+      ports:
+        - "5005:5005"
+      environment:
+        - DB_HOST=postgres_db
+        - POSTGRES_USER=admin
+        - POSTGRES_PASSWORD=adminpassword
+        - POSTGRES_DB=tienda_db
+        - RABBITMQ_HOST=rabbitmq_broker
+        - RABBITMQ_USER=admin 
+        - RABBITMQ_PASS=adminpassword
+      volumes:
+        - ./backend:/app
+      depends_on:
+        - postgres_db
+        - rabbitmq_broker
 
 volumes:
   pg_data:

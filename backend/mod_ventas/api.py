@@ -95,6 +95,70 @@ def iniciar_checkout():
         "mensaje": "Orden recibida y enviada a procesamiento asincrono."
     }), 202
 
+# Quitar un elemento especifico del carrito
+@app.route("/api/ventas/carrito/<usuario_id>/item/<juego_id>", methods=["DELETE"])
+def quitar_del_carrito(usuario_id, juego_id):
+    """
+    Elimina solo la primera instancia de un juego especifico 
+    del carrito temporal del usuario y recalcula el total.
+    """
+    # Obtener el carrito actual
+    carrito_actual = get_carrito(usuario_id)
+    
+    items_restantes = []
+    item_eliminado = False  # Nuestra bandera de control
+    
+    for item in carrito_actual.get("items", []):
+        # Si coincide el ID Y aun no hemos eliminado ninguno en este ciclo
+        if str(item.get("juego_id")) == str(juego_id) and not item_eliminado:
+            # Restamos el costo de este item especifico
+            costo_a_restar = item.get("precio", 0) * item.get("cantidad", 1)
+            carrito_actual["total_estimado"] -= costo_a_restar
+            
+            # Encendemos la bandera para que no se borren copias adicionales
+            item_eliminado = True
+        else:
+            # Todos los demas items se conservan
+            items_restantes.append(item)
+            
+    if not item_eliminado:
+        return jsonify({"error": "El producto no se encontraba en el carrito"}), 404
+        
+    carrito_actual["total_estimado"] = max(0.0, carrito_actual["total_estimado"])
+    carrito_actual["items"] = items_restantes
+    
+    # Guardar en Redis
+    set_carrito(usuario_id, carrito_actual)
+    
+    # Dar respuesta
+    return jsonify({
+        "mensaje": "Un producto eliminado del carrito exitosamente", 
+        "usuario_id": usuario_id,
+        "total_estimado": carrito_actual["total_estimado"]
+    }), 200
+
+# Vaciar todo el carrito de un usuario
+@app.route("/api/ventas/carrito/<usuario_id>", methods=["DELETE"])
+def vaciar_carrito(usuario_id):
+    """
+    Limpia por completo el carrito de compras de un usuario.
+    """
+    carrito_actual = get_carrito(usuario_id)
+    
+    # Reiniciar valores
+    carrito_actual["items"] = []
+    carrito_actual["total_estimado"] = 0.0
+    
+    # Guardar en Redis
+    set_carrito(usuario_id, carrito_actual)
+    
+    # Dar respuesta
+    return jsonify({
+        "mensaje": "El carrito ha sido vaciado exitosamente",
+        "usuario_id": usuario_id,
+        "total_estimado": 0.0
+    }), 200
+
 # Obtener estado de una orden
 @app.route("/api/ventas/ordenes/status/<id_orden_compra>", methods=["GET"])
 def consultar_estado_orden(id_orden_compra):

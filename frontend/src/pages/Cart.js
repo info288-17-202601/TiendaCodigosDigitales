@@ -6,6 +6,18 @@ const Cart = ({ onNavigate }) => {
   const { cart, removeFromCart, clearCart, loading } = useCart();
   const [checkoutStatus, setCheckoutStatus] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const handleClearCart = async () => {
+    if (window.confirm('¿Estás seguro de que deseas vaciar todo el carrito?')) {
+      await clearCart();
+    }
+  };
+
+  const confirmClearCart = async () => {
+    await clearCart();
+    setShowConfirmModal(false);
+  };
 
   const handleCheckout = async () => {
     setIsProcessing(true);
@@ -44,6 +56,32 @@ const Cart = ({ onNavigate }) => {
 
   return (
     <div className="animate-fade-in" style={styles.container}>
+      {showConfirmModal && (
+        <div style={styles.modalOverlay}>
+          <div className="glass-card animate-fade-in" style={styles.modalContent}>
+            <div style={styles.modalIcon}>⚠️</div>
+            <h3>¿Vaciar carrito?</h3>
+            <p>Esta acción eliminará todos los productos que has seleccionado.</p>
+            <div style={styles.modalActions}>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setShowConfirmModal(false)}
+                style={styles.modalBtn}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-danger" 
+                onClick={confirmClearCart}
+                style={styles.modalBtn}
+              >
+                Sí, vaciar todo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2>Tu Carrito</h2>
 
       {cart.items.length === 0 ? (
@@ -99,6 +137,14 @@ const Cart = ({ onNavigate }) => {
               disabled={isProcessing}
             >
               {isProcessing ? 'Procesando...' : 'Proceder al Pago'}
+            </button>
+            <button
+              className="btn-danger-outline"
+              style={styles.clearBtn}
+              onClick={() => setShowConfirmModal(true)}
+              disabled={isProcessing}
+            >
+              Vaciar Carrito
             </button>
           </div>
         </div>
@@ -216,6 +262,75 @@ const styles = {
     fontSize: '0.9rem',
     textAlign: 'center',
     border: '1px solid rgba(239, 68, 68, 0.2)'
+  },
+  clearBtn: {
+    width: '100%',
+    padding: '0.75rem',
+    marginTop: '0.5rem',
+    background: 'transparent',
+    border: '1px solid var(--danger)',
+    color: 'var(--danger)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    transition: 'all 0.3s'
+  },
+  
+  headerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1rem'
+  },
+
+  // 4. ESTILOS PARA EL MODAL
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backdropFilter: 'blur(5px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '20px'
+  },
+  modalContent: {
+    maxWidth: '400px',
+    width: '100%',
+    padding: '2rem',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    border: '1px solid rgba(255, 255, 255, 0.1)'
+  },
+  modalIcon: {
+    fontSize: '3rem',
+    marginBottom: '0.5rem'
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '1rem',
+    marginTop: '1rem'
+  },
+  modalBtn: {
+    flex: 1,
+    padding: '0.75rem'
+  },
+  clearBtn: {
+    width: '100%',
+    padding: '0.75rem',
+    marginTop: '0.5rem',
+    background: 'transparent',
+    border: '1px solid #ff4d4d',
+    color: '#ff4d4d',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
   }
 };
 

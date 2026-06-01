@@ -1,7 +1,7 @@
 const API_URL = 'http://localhost/api';
 
 export const api = {
-  searchGames: async (query = '*:*') => {
+  searchGames: async (query = '*:*' ) => {
     try {
       const res = await fetch(`${API_URL}/busqueda/buscar?q=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Search failed');
@@ -48,6 +48,38 @@ export const api = {
       return null;
     }
   },
+
+  // --- NUEVAS FUNCIONES DE ELIMINACIÓN ---
+
+  // Elimina una instancia de un juego específico
+  removeFromCart: async (usuarioId, juegoId) => {
+    try {
+      const res = await fetch(`${API_URL}/ventas/carrito/${usuarioId}/item/${juegoId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to remove item');
+      return await res.json();
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  },
+
+  // Vacía todo el carrito del usuario
+  clearCart: async (usuarioId) => {
+    try {
+      const res = await fetch(`${API_URL}/ventas/carrito/${usuarioId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to clear cart');
+      return await res.json();
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  },
+
+  // ---------------------------------------
 
   checkout: async (payload) => {
     try {

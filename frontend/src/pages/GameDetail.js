@@ -22,7 +22,7 @@ const GameDetail = ({ gameId, onNavigate }) => {
   return (
     <div className="animate-fade-in" style={styles.container}>
       <button className="btn-secondary" onClick={() => onNavigate('home')} style={{marginBottom: '2rem'}}>
-        &larr; Back to Catalog
+        &larr; Volver al catálogo
       </button>
 
       <div className="glass-card" style={styles.content}>
@@ -40,7 +40,6 @@ const GameDetail = ({ gameId, onNavigate }) => {
           <p style={styles.description}>
             {game.descripcion || 'No hay una descripción disponible para este juego actualmente.'}
           </p>
-          
           <div style={styles.actionArea}>
             <div style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</div>
             <button 
@@ -49,9 +48,9 @@ const GameDetail = ({ gameId, onNavigate }) => {
                 addToCart(game);
                 onNavigate('cart');
               }}
-              style={{padding: '1rem 2rem', fontSize: '1.1rem'}}
+              style={{padding: '1.5rem 0.5rem', fontSize: '1.1rem'}}
             >
-              Add to Cart
+              Añadir al carrito
             </button>
           </div>
         </div>

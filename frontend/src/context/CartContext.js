@@ -48,17 +48,32 @@ export const CartProvider = ({ children }) => {
     });
   };
 
+// Dentro de CartContext.js
   const removeFromCart = async (juego_id) => {
-    const newItems = cart.items.filter(i => i.juego_id !== juego_id);
-    const total = newItems.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
-    const newCart = { ...cart, items: newItems, total_estimado: total };
-    
-    setCart(newCart);
+    try {
+      // Se llama a la API para que borre en el servidor (Redis)
+
+      await api.removeFromCart('user-123', juego_id);
+
+      // Se actualiza localmente para que la UI sea instantánea
+
+      const newItems = cart.items.filter(i => i.juego_id !== juego_id);
+      const total = newItems.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+      
+      setCart({ ...cart, items: newItems, total_estimado: total });
+    } catch (error) {
+      console.error("Error al eliminar el item:", error);
+    }
   };
 
   const clearCart = async () => {
-    const newCart = { items: [], total_estimado: 0, region_compra: 'LATAM' };
-    setCart(newCart);
+    try {
+      await api.clearCart('user-123');
+
+      setCart({ items: [], total_estimado: 0, region_compra: 'LATAM' });
+    } catch (error) {
+      console.error("Error al vaciar el carrito:", error);
+    }
   };
 
   return (

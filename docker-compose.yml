@@ -234,6 +234,7 @@ services:
       depends_on:
         - postgres_db
         - rabbitmq_broker
+        
   pago_api:
     build:
       context: ./backend
@@ -268,6 +269,25 @@ services:
     volumes:
       - ./backend:/app
     command: python -u -m mod_pago.consumer
+    depends_on:
+      - postgres_db
+      - rabbitmq_broker
+
+  notificaciones_worker:
+    build: 
+      context: ./backend
+    container_name: notificaciones_worker
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=adminpassword
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_notificaciones.consumer
     depends_on:
       - postgres_db
       - rabbitmq_broker

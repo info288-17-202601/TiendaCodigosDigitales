@@ -1,6 +1,6 @@
 import json
 import time
-from shared.messaging import iniciar_multiples_consumidores, publicar_evento
+from shared.messaging import iniciar_multiples_consumidores, publicar_evento, publicar_evento_exchange
 from mod_inventario.service import reservar_codigo_seguro, liberar_codigo_seguro
 
 # ----- Callbacks -----
@@ -62,7 +62,7 @@ def procesar_orden_creada(ch, method, properties, body):
                 "motivo": "OUT_OF_STOCK",
                 "juegos_sin_stock": juegos_sin_stock # Enviamos la lista completa al Modulo de Ventas
             }
-            publicar_evento('inventario.fallido', evento_fallo)
+            publicar_evento_exchange('inventario.fallido', evento_fallo)
             print(f"[Inventario] Evento 'inventario.fallido' publicado con {len(juegos_sin_stock)} juegos sin stock.")
 
         # Si la lista de fallos esta vacia

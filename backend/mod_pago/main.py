@@ -1,17 +1,10 @@
 from flask import Flask, request, jsonify
-from service import iniciar_escucha
 from shared.database import get_connection, release_connection
-import threading
 
 # Definicion principal del Modulo de pagos
 app = Flask(__name__)
 
 def main():
-    # Linea Principal para RabbitMQ
-    hilo_consumidor = threading.Thread(target=iniciar_escucha, daemon=True)
-    hilo_consumidor.start()
-
-    # Mini api para la base de datos de perfiles
     app.run(host='0.0.0.0', port=5003)
 
 
@@ -159,8 +152,6 @@ def eliminar_cartera():
         cursor.close()
         if conn:
             release_connection("db_perfil",conn)
-
-# Para que todo funcione
 
 if __name__ == "__main__":
     main()

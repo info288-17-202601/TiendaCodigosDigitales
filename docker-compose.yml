@@ -93,11 +93,10 @@ services:
     image: solr:9.5-slim
     container_name: solr_search
     ports:
-      - "8983:8983" # Puerto por defecto de Solr
-    # Este comando crea automáticamente un "core" (como una base de datos) llamado "catalogo"
+      - "8983:8983"
     command: solr-precreate catalogo
 
-  # 8. Módulo de Búsqueda (Tu código)
+  # 8. Módulo de Búsqueda
   search_api:
     build:
       context: ./backend
@@ -115,7 +114,7 @@ services:
     command: python mod_busqueda/service.py
     depends_on:
       - solr_engine
-      - postgres_db # Espera a que la BD despierte
+      - postgres_db
 
 # 9. Modulo de ventas
   ventas_api:
@@ -235,6 +234,43 @@ services:
       depends_on:
         - postgres_db
         - rabbitmq_broker
+  pago_api:
+    build:
+      context: ./backend
+    container_name: pago_api
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_pago.main
+    depends_on:
+      - postgres_db
+      - rabbitmq_broker
+
+  pago_worker:
+    build:
+      context: ./backend
+    container_name: pago_worker
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_pago.consumer
+    depends_on:
+      - postgres_db
+      - rabbitmq_broker
 
 volumes:
   pg_data:

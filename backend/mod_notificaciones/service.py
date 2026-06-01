@@ -22,6 +22,38 @@ def armar_mensaje_compra(id_orden_compra, juego_id, codigos_entregados):
     )
 
 
+def armar_mensaje_generico(asunto, mensaje_cuerpo):
+    return f"{mensaje_cuerpo}\n\nGracias por usar nuestro servicio."
+
+def enviar_notificacion(email, asunto, cuerpo):
+    if not SMTP_HOST:
+        print(f"[Notificaciones] Modo simulacion: correo a {email}")
+        print(f"Asunto: {asunto}")
+        print(cuerpo)
+        return {
+            "estado": "SIMULADA",
+            "destinatario": email,
+        }
+
+    mensaje = EmailMessage()
+    mensaje["From"] = SMTP_FROM
+    mensaje["To"] = email
+    mensaje["Subject"] = asunto
+    mensaje.set_content(cuerpo)
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as servidor:
+        if SMTP_USE_TLS:
+            servidor.starttls()
+        if SMTP_USER and SMTP_PASS:
+            servidor.login(SMTP_USER, SMTP_PASS)
+        servidor.send_message(mensaje)
+
+    print(f"[Notificaciones] Correo enviado a {email}")
+    return {
+        "estado": "ENVIADA",
+        "destinatario": email,
+    }
+
 def enviar_notificacion_compra(email, id_orden_compra, juego_id, codigos_entregados):
     """
     Envía la notificación de compra por correo.

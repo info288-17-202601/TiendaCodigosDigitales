@@ -9,7 +9,7 @@ RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "admin")
 RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "adminpassword")
 
 # Establece y retorna una conexion con RabbitMQ
-def get_rabbitmq_connection(reintentos=5, espera=5):
+def get_rabbitmq_connection(reintentos=12, espera=5):
     """Establece y retorna una conexion con RabbitMQ"""
     credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
     parameters = pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials)

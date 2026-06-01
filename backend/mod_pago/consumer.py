@@ -1,7 +1,7 @@
 # Espera compras
 
 import json
-from service import procesar_pago
+from mod_pago.service import procesar_pago
 from shared.messaging import publicar_evento_exchange
 
 # Procesamiento de compra de los productos

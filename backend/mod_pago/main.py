@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from service import iniciar_escucha
+from mod_pago.service import iniciar_escucha
 from shared.database import get_connection, release_connection
 import threading
 

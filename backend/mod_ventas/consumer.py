@@ -93,9 +93,12 @@ def procesar_inventario_fallido(ch, method, properties, body):
     Callback sincronico que escucha cuando el Modulo de Inventario 
     rechaza una orden por falta de stock y registra el historial final.
     """
+    print(f"[Notificaciones] Mensaje recibido: {body}")
     try:
         # Deserializar el mensaje
         datos_fallo = json.loads(body)
+        email = datos_fallo.get('usuario_email')
+        print(f"[Notificaciones] Email: {email}") 
         id_orden_compra = datos_fallo.get('id_orden_compra')
         usuario_id = datos_fallo.get('usuario_id')
         metodo_pago = datos_fallo.get('metodo_pago')
@@ -174,7 +177,9 @@ if __name__ == '__main__':
     mis_colas = [
         # Cola clasica directa para inventario fallido
         {
-            "cola": "inventario.fallido", 
+            "cola": "ventas_inventario.fallido",      # <-- nombre único para ventas
+            "exchange": "tienda_exchange",             # <-- agrega exchange
+            "routing_key": "inventario.fallido", 
             "callback": procesar_inventario_fallido
         },
         

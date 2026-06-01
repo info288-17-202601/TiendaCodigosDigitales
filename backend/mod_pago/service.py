@@ -1,76 +1,90 @@
-# Procesa las compras
 import time
+import json
 from random import randint
-from shared.messaging import iniciar_consumidor
+from shared.messaging import iniciar_consumidor, publicar_evento_exchange
 
-# Funcion para poder ver los mensajes
 def iniciar_escucha():
-    iniciar_consumidor('inventario.reservado',procesar_pago)
+    iniciar_consumidor('inventario.reservado', _callback_pago)
 
+def _callback_pago(ch, method, properties, body):
+    try:
+        datos = json.loads(body)
+        procesar_pago(
+            monto=datos.get('total_estimado', 0),
+            usuario=datos.get('usuario_id'),
+            correo=datos.get('email'),
+            id_orden_compra=datos.get('id_orden_compra'),
+            region=datos.get('region'),
+            metodo_pago=datos.get('metodo_pago'),
+            token=datos.get('token', 'TOKEN_DEFAULT')
+        )
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    except Exception as e:
+        print(f"[Pagos] Error procesando mensaje: {e}")
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-# Procesamiento de la compra de manera artificial
-def procesar_pago(monto:float, usuario:str, correo:str,id_orden_compra:str,region:str, metodo_pago:str, token:str):
+def procesar_pago(monto: float, usuario: str, correo: str, id_orden_compra: str, region: str, metodo_pago: str, token: str):
     print(f"Realizando compra de {monto}\nUserID : {usuario}\nCorreo : {correo}")
-
-    #Llamada al 3ro que procesara el pago en caso de no existir un token para conexion directa
     print(f"El metodo de {metodo_pago} fue aceptado. Token: {token}")
-
     print(f"El token taba bien :3")
 
-    # Realmente no vamos a usar mucho esto
     estado = "aprovado"
-    time.sleep(5) # Puede cambiar segun logica frontend
-    chance = randint(1,100)
+    time.sleep(5)
+    chance = randint(1, 100)
     if chance <= 15:
-        match (int)(chance/5) :
+        match (int)(chance / 5):
             case 0:
                 estado = "rechazado"
             case 1:
                 estado = "cancelado"
             case _:
                 estado = "expirado"
-    
-    # "Logica Real"
 
-    match estado:  
+    match estado:
         case "aprovado":
             payload = {
-                "id_usuario":usuario,
+                "id_usuario": usuario,
+                "usuario_email": correo,       # <-- agregado, notificaciones lo necesita
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "APROBADO",
                 "motivo": "",
-                "region":region,
+                "region": region,
                 "id_transaccion_pasarela": "txn_987654321"
             }
         case "expirado":
             payload = {
-                "id_usuario":usuario,
+                "id_usuario": usuario,
+                "usuario_email": correo,       # <-- agregado
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
                 "motivo": "Timed Out - El pago demoro en ser procesado",
-                "region":region,
+                "region": region,
                 "id_transaccion_pasarela": ""
             }
         case "cancelado":
             payload = {
-                "id_usuario":usuario,
+                "id_usuario": usuario,
+                "usuario_email": correo,       # <-- agregado
                 "id_orden_compra": id_orden_compra,
-                "estado_pago": "NO APROBADO", 
+                "estado_pago": "NO APROBADO",
                 "motivo": "Pago Cancelado / No procesado",
-                "region":region,
+                "region": region,
                 "id_transaccion_pasarela": ""
             }
         case "rechazado":
             payload = {
-                "id_usuario":usuario,
+                "id_usuario": usuario,
+                "usuario_email": correo,       # <-- agregado
                 "id_orden_compra": id_orden_compra,
                 "estado_pago": "NO APROBADO",
                 "motivo": "Tarjeta rechazada",
-                "region":region,
+                "region": region,
                 "id_transaccion_pasarela": ""
             }
-        case _ :
-            payload = {None}
+        case _:
+            return  # caso inválido, no publicar nada
 
+    publicar_evento_exchange('pago.procesado', payload)
+    print(f"[Pagos] Evento 'pago.procesado' publicado para orden {id_orden_compra} — Estado: {payload['estado_pago']}")
 
     return payload

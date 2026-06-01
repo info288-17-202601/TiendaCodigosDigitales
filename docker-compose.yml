@@ -3,9 +3,10 @@ version: '3.8'
 
 services:
   # 1. Relational DB - Postgres
-  postgres_db:                    # Internal name of the container            
+  postgres_db:
+    # Internal name of the container            
     image: postgres:16-alpine
-    container_name: db_main       # User identifier for the container - to use on docker ps or logs
+    container_name: db_main # User identifier for the container - to use on docker ps or logs
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: adminpassword
@@ -25,14 +26,14 @@ services:
 
   # 3. Message Broker - RabbitMQ
   rabbitmq_broker:
-    image: rabbitmq:3.13-management-alpine   # Includes management to use web dashboard
+    image: rabbitmq:3.13-management-alpine # Includes management to use web dashboard
     container_name: message_broker
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: adminpassword
     ports:
-      - "5672:5672"                           # Port for microservice communication
-      - "15672:15672"                         # Port for web dashboard
+      - "5672:5672" # Port for microservice communication
+      - "15672:15672" # Port for web dashboard
 
   
   # 4. Backend - Python microservices 
@@ -60,9 +61,18 @@ services:
   frontend_app:
     build:
       context: ./frontend
+      target: build
     container_name: react_frontend
+    environment:
+      - PORT=80
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm start
     ports:
-      - "3000:80" # Nginx runs on Port 80
+      - "3000:80" # Maps host 3000 to container 80 (React dev server running on 80)
 
   # 6. Reverse Proxy - Nginx
   nginx_router:
@@ -78,18 +88,17 @@ services:
       - inventario_api
       #- backend_api
 
-# 7. Motor de Búsqueda - Apache Solr
+  # 7. Motor de Búsqueda - Apache Solr
   solr_engine:
     image: solr:9.5-slim
     container_name: solr_search
     ports:
-      - "8983:8983" # Puerto por defecto de Solr
-    # Este comando crea automáticamente un "core" (como una base de datos) llamado "catalogo"
+      - "8983:8983"
     command: solr-precreate catalogo
 
-# 8. Módulo de Búsqueda (Tu código)
+  # 8. Módulo de Búsqueda
   search_api:
-    build: 
+    build:
       context: ./backend
     container_name: python_search
     environment:
@@ -99,13 +108,13 @@ services:
       - POSTGRES_DB=tienda_db
       - RABBITMQ_HOST=rabbitmq_broker
     ports:
-      - "5002:5002" 
+      - "5002:5002"
     volumes:
-      - ./backend:/app 
-    command: python mod_busqueda/service.py 
+      - ./backend:/app
+    command: python mod_busqueda/service.py
     depends_on:
       - solr_engine
-      - postgres_db # Espera a que la BD despierte
+      - postgres_db
 
 # 9. Modulo de ventas
   ventas_api:
@@ -225,6 +234,43 @@ services:
       depends_on:
         - postgres_db
         - rabbitmq_broker
+  pago_api:
+    build:
+      context: ./backend
+    container_name: pago_api
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_pago.main
+    depends_on:
+      - postgres_db
+      - rabbitmq_broker
+
+  pago_worker:
+    build:
+      context: ./backend
+    container_name: pago_worker
+    environment:
+      - DB_HOST=postgres_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=rabbitmq_broker
+      - REDIS_HOST=redis_cache
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_pago.consumer
+    depends_on:
+      - postgres_db
+      - rabbitmq_broker
 
 volumes:
   pg_data:

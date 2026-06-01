@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  pago_api:
+    build:
+      context: ./backend
+    container_name: pago_api
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+      - REDIS_HOST=redis_session
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_pago.main
+    networks:
+      - red_tienda
+
+  pago_worker:
+    build:
+      context: ./backend
+    container_name: pago_worker
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+      - REDIS_HOST=redis_session
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_pago.consumer
+    networks:
+      - red_tienda
+
+networks:
+  red_tienda:
+    external: true

@@ -25,7 +25,11 @@ const Navbar = ({ onNavigate, currentView }) => {
             className="btn-primary"
             onClick={() => onNavigate('cart')}
           >
-            🛒 Carrito ({totalItems})
+          <div style={styles.cartLink} onClick={() => onNavigate('cart')}>
+            <img src="/cart.svg" alt="Carrito" style={styles.cartIcon} />
+            <span>Carrito ({totalItems})</span>
+          </div>
+
           </button>
         </div>
       </div>
@@ -65,7 +69,27 @@ const styles = {
     display: 'flex',
     gap: '1.5rem',
     alignItems: 'center'
+  },
+  cartLink: {
+    display: 'flex',
+    alignItems: 'center', // Alinea verticalmente el icono con el texto
+    gap: '8px',           // Espacio entre el icono, el texto y el número
+    cursor: 'pointer',
+    textDecoration: 'none',
+    color: 'inherit',
+    fontSize: '1rem'      // Ajusta según el tamaño de tu fuente
+  },
+  cartIcon: {
+    width: '20px',        // Tamaño controlado
+    height: '20px',
+    display: 'block',     // Evita espacios extra debajo de la imagen
+    objectFit: 'contain'
+  },
+  cartBadge: {
+    fontWeight: 'bold',
+    color: 'var(--success)', // O el color que prefieras para resaltar el número
   }
+
 };
 
 export default Navbar;

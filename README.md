@@ -56,6 +56,10 @@ Para facilitar el desarrollo, el consumo de APIs y la administración, los conte
 * **`15672`** - RabbitMQ Management (Dashboard Web UI para monitorear colas y exchanges)
 
 # Cómo levantar el proyecto (Entorno Distribuido)
+Antes que nada, se puede levantar todo de forma unificada con 
+```bash
+docker-compose -f docker-compose.yml up --build
+```
 
 El sistema está diseñado para que cada módulo pueda levantarse de forma independiente. Para que los contenedores puedan comunicarse entre diferentes archivos `docker-compose`, utilizamos una red externa de Docker.
 

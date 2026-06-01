@@ -11,7 +11,7 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
     
     Retorna un diccionario con el codigo si tiene exito, o None si no hay stock.
     """
-    # Obtener la base de datos correcta según la región
+    # Obtener la base de datos correcta segun la region
     db_name = get_inventory_db_name(region)
     conn = None
     
@@ -28,13 +28,13 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
             LIMIT 1 
             FOR UPDATE SKIP LOCKED;
         """
-        # Pasamos las variables como tupla (%s) para evitar inyección SQL
+        # Pasamos las variables como tupla (%s) para evitar inyeccion SQL
         cur.execute(query_bloqueo, (id_juego,))
         clave_encontrada = cur.fetchone()
         
         # Validar stock
         if not clave_encontrada:
-            # No hay codigos disponibles o todos están bloqueados en este milisegundo
+            # No hay codigos disponibles o todos estan bloqueados en este milisegundo
             conn.rollback()
             cur.close()
             return None
@@ -66,16 +66,17 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         conn.commit()
         cur.close()
         
-        print(f"[Inventario] Código {codigo_serial} reservado para orden {id_orden_compra} en {db_name}.")
+        print(f"[Inventario] Codigo {codigo_serial} reservado para orden {id_orden_compra} en {db_name}.")
 
         # Publicar evento a RabbitMQ sobre stock agotado
         if stock_restante == 0:
             payload = {
                 "juego_id": id_juego,
-                "region": region
+                "region": region,
+                "motivo": "AGOTADO"
             }
-            publicar_evento('inventario.agotado', payload)
-            print(f"[Inventario] Evento emitido: {id_juego} agotado en la región {region}.")
+            publicar_evento('inventario.cambio_stock', payload)
+            print(f"[Inventario] Evento emitido: {id_juego} agotado en la region {region}.")
 
         # Dar clave encontrada
         return clave_encontrada
@@ -94,8 +95,9 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
 
 def liberar_codigo_seguro(id_clave, region):
     """
-    Función de compensación (Rollback).
-    Devuelve un código específico a estado 'DISPONIBLE' si la orden falla.
+    Funcion de compensacion (Rollback).
+    Devuelve un codigo especifico a estado 'DISPONIBLE' si la orden falla.
+    y avisa al Modulo de Busqueda que volvio a haber stock.
     """
     db_name = get_inventory_db_name(region)
     conn = None
@@ -106,16 +108,31 @@ def liberar_codigo_seguro(id_clave, region):
         query_rollback = """
             UPDATE clave_digital 
             SET estado = 'DISPONIBLE', id_orden_compra = NULL 
-            WHERE id_clave = %s;
+            WHERE id_clave = %s
+            RETURNING id_juego;
         """
         cur.execute(query_rollback, (id_clave,))
+        resultado = cur.fetchone()
         conn.commit()
         cur.close()
-        print(f"[Inventario] Código {id_clave} liberado por compensación en {db_name}.")
+        print(f"[Inventario] Codigo {id_clave} liberado por compensacion en {db_name}.")
+
+        # Si se actualizo correctamente, avisamos a busquedas que hay stock
+        if resultado:
+            id_juego = resultado['id_juego'] if isinstance(resultado, dict) else resultado[0]
+            
+            payload_restaurado = {
+                "juego_id": id_juego,
+                "region": region,
+                "motivo": "DISPONIBLE"
+            }
+            # Emitimos el evento de que el juego vuelve a estar disponible
+            publicar_evento('inventario.cambio_stock', payload_restaurado)
+            print(f"[Inventario] Evento emitido: {id_juego} vuelve a estar DISPONIBLE en {region}.")
     except Exception as e:
         if conn:
             conn.rollback()
-        print(f"[!] Error transaccional al liberar código: {e}")
+        print(f"[!] Error transaccional al liberar codigo: {e}")
     finally:
         if conn:
             release_connection(db_name, conn)

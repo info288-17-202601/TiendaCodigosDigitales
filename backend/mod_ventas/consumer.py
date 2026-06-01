@@ -100,11 +100,15 @@ def procesar_inventario_fallido(ch, method, properties, body):
         usuario_id = datos_fallo.get('usuario_id')
         metodo_pago = datos_fallo.get('metodo_pago')
         motivo = datos_fallo.get('motivo')
+        juegos_sin_stock = datos_fallo.get('juegos_sin_stock', [])
 
-        print(f"[Ventas] Reaccion del Modulo de Ventas al fallo de la orden {id_orden_compra}")
+        # Armar un string con los nombres de los juegos para la BD
+        nombres_agotados = ", ".join([j.get('titulo', 'Desconocido') for j in juegos_sin_stock])
+        motivo_detallado = f"Sin stock para: {nombres_agotados}"
+
+        print(f"[Ventas] Reaccion de Ventas al fallo de la orden {id_orden_compra}")
         print(f"         - Usuario afectado: {usuario_id}")
-        print(f"         - Metodo de pago: {metodo_pago}")
-        print(f"         - Motivo del rechazo: {motivo}")
+        print(f"         - Motivo exacto: {motivo_detallado}")
 
         # Insercion en la Base de Datos de Ventas (Historial de Fallo)
         db_name = "db_ventas"
@@ -117,10 +121,10 @@ def procesar_inventario_fallido(ch, method, properties, body):
             # Usamos UPDATE, buscando la orden PENDIENTE
             query = """
                 UPDATE orden_compra 
-                SET estado_pago = 'FALLIDO' 
+                SET estado_pago = 'FALLIDO', motivo = %s 
                 WHERE id_orden_compra = %s;
             """
-            cur.execute(query, (id_orden_compra,))
+            cur.execute(query, (motivo_detallado, id_orden_compra,))
             conn.commit()
             cur.close()
             
@@ -136,7 +140,29 @@ def procesar_inventario_fallido(ch, method, properties, body):
             if conn:
                 release_connection(db_name, conn)
 
-        # Confirmacion Critica: Enviar ACK a RabbitMQ
+        # Limpiar selectivamente el Carrito de compras 
+        if usuario_id and juegos_sin_stock:
+            try:
+                carrito = get_carrito(usuario_id)
+                if carrito and 'items' in carrito:
+                    # Extraer solo los IDs de los juegos que fallaron
+                    ids_agotados = [j.get('juego_id') for j in juegos_sin_stock]
+                    
+                    # Filtrar el carrito: nos quedamos solo con los juegos que NO fallaron
+                    items_restantes = [item for item in carrito['items'] if item.get('juego_id') not in ids_agotados]
+                    
+                    carrito['items'] = items_restantes
+                    
+                    # Recalcular el total estimado sumando los precios de los items que quedaron
+                    nuevo_total = sum(item.get('precio', 0) * item.get('cantidad', 1) for item in items_restantes)
+                    carrito['total_estimado'] = nuevo_total
+                    
+                    set_carrito(usuario_id, carrito)
+                    print(f"[Ventas] Carrito actualizado para {usuario_id}. Se removieron los {len(ids_agotados)} juegos sin stock.")
+            except Exception as e_cache:
+                print(f"[!] Error intentando limpiar los juegos del carrito: {e_cache}")
+
+        # Enviar ACK a RabbitMQ
         ch.basic_ack(delivery_tag=method.delivery_tag)
         print(f"[Ventas] ACK enviado. Incidente cerrado y borrado de la cola.")
 

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  frontend_app:
+    build:
+      context: ./frontend
+      target: build
+    container_name: react_frontend
+    environment:
+      - PORT=80
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm start
+    ports:
+      - "3000:80"
+    networks:
+      - red_tienda
+
+  nginx_router:
+    image: nginx:1.25-alpine
+    container_name: nginx_router
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend_app
+    networks:
+      - red_tienda
+
+networks:
+  red_tienda:
+    external: true

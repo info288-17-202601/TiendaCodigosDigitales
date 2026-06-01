@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  ventas_api:
+    build: 
+      context: ./backend
+    container_name: ventas_api
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+      - REDIS_HOST=redis_session
+      - USER_SESSION_EXPIRATION_TIME=3600
+      - MAX_DB_POOL_CONNS=5
+      - MAX_CACHE_POOL_CONNS=10
+    ports:
+      - "5001:5001" 
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_ventas.api
+    networks:
+      - red_tienda
+
+  ventas_worker:
+    build: 
+      context: ./backend
+    container_name: ventas_worker
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+      - REDIS_HOST=redis_session
+      - USER_SESSION_EXPIRATION_TIME=3600
+      - MAX_DB_POOL_CONNS=5
+      - MAX_CACHE_POOL_CONNS=10
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_ventas.consumer
+    networks:
+      - red_tienda
+
+networks:
+  red_tienda:
+    external: true

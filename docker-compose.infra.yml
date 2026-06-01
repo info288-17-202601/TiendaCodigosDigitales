@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: db_main
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: tienda_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./postgres-init/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    networks:
+      - red_tienda
+
+  redis_cache:
+    image: redis:7.2-alpine
+    container_name: redis_session
+    ports:
+      - "6379:6379"
+    networks:
+      - red_tienda
+
+  rabbitmq_broker:
+    image: rabbitmq:3.13-management-alpine
+    container_name: message_broker
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpassword
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - red_tienda
+
+  solr_engine:
+    image: solr:9.5-slim
+    container_name: solr_search
+    ports:
+      - "8983:8983"
+    command: solr-precreate catalogo
+    networks:
+      - red_tienda
+
+networks:
+  red_tienda:
+    external: true
+
+volumes:
+  pg_data:

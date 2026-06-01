@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  search_api:
+    build:
+      context: ./backend
+    container_name: python_search
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./backend:/app
+    command: python mod_busqueda/service.py
+    networks:
+      - red_tienda
+
+  modulo_admin:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: admin_module
+    command: python mod_admin/app.py
+    ports:
+      - "5005:5005"
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+      - RABBITMQ_USER=admin 
+      - RABBITMQ_PASS=adminpassword
+    volumes:
+      - ./backend:/app
+    networks:
+      - red_tienda
+
+networks:
+  red_tienda:
+    external: true

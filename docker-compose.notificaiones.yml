@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  notificaciones_worker:
+    build: 
+      context: ./backend
+    container_name: notificaciones_worker
+    environment:
+      - DB_HOST=db_main
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=tienda_db
+      - RABBITMQ_HOST=message_broker
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=adminpassword
+    volumes:
+      - ./backend:/app 
+    command: python -u -m mod_notificaciones.consumer
+    networks:
+      - red_tienda
+
+networks:
+  red_tienda:
+    external: true

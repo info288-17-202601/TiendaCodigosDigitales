@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { api } from '../api';
+const correoPrueba = "correo.prueba@gmail.com"
 
 const Cart = ({ onNavigate }) => {
   const { cart, removeFromCart, clearCart, loading } = useCart();
@@ -24,7 +25,7 @@ const Cart = ({ onNavigate }) => {
     try {
       const result = await api.checkout({
         usuario_id: 'user-123',
-        email: 'user@example.com',
+        email: correoPrueba,
         metodo_pago: 'tarjeta'
       });
       setCheckoutStatus({ success: true, orderId: result.id_orden_compra });

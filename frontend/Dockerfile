@@ -6,6 +6,10 @@ FROM node:18-alpine AS build
 # Work directory inside container - Following commands run here
 WORKDIR /app
 
+# ENV variables for dev
+ARG VITE_CORREO_PRUEBA
+ENV VITE_CORREO_PRUEBA=$VITE_CORREO_PRUEBA
+
 # Copy and install dependencies
 COPY package.json package-lock.json* ./
 RUN npm install

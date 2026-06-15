@@ -12,9 +12,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copies code from backend
 COPY . .
-
-# Expose port where flask will run
-EXPOSE 5050
-
-# Executes api
-CMD ["python", "app.py"]

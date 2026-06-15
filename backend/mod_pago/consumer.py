@@ -9,10 +9,10 @@ def verificar_compra(ch, method, properties, body):
     try:
         datos_orden = json.loads(body)
         id_orden_compra = datos_orden.get('id_orden_compra') 
-        total_estimado = datos_orden.get('total_estimado')
+        total_estimado = datos_orden.get('monto_a_cobrar')
         usuario_id = datos_orden.get('usuario_id')
         usuario_email = datos_orden.get('usuario_email')
-        metodo_pago = datos_orden.get('metodo pago')
+        metodo_pago = datos_orden.get('metodo_pago')
         region = datos_orden.get('region')
         
         #Saca el token

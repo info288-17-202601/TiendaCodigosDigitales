@@ -2,6 +2,7 @@ import json
 import time
 from shared.messaging import iniciar_multiples_consumidores, publicar_evento, publicar_evento_exchange
 from mod_inventario.service import reservar_codigo_seguro, liberar_codigo_seguro
+from shared.database import get_inventory_db_name, get_connection, release_connection
 
 # ----- Callbacks -----
 
@@ -106,13 +107,42 @@ def callback_pago_inventario(ch, method, properties, body):
             query = """
                 UPDATE clave_digital
                 SET estado = 'VENDIDO' 
-                WHERE id_orden_compra = %s;
+                WHERE id_orden_compra = %s                
+                RETURNING id_juego, codigo_serial;
             """
             cur.execute(query, (id_orden_compra,))
+            resultados = cur.fetchall()
             conn.commit()
             cur.close()
             
             print(f"[Inventario] BD Actualizada: claves con orden {id_orden_compra} como VENDIDO.")
+
+            # Si se actualizo correctamente se publica un evento a notificaciones con los codigos seriales
+            if resultados:
+                items_vendidos = []
+                for resultado in resultados:
+                    if isinstance(resultado, dict):
+                        id_juego = resultado['id_juego']
+                        codigo_serial = resultado['codigo_serial']
+                    else:
+                        id_juego = resultado[0]
+                        codigo_serial = resultado[1]
+                    
+                    # Agregamos el juego y su serial a la lista
+                    items_vendidos.append({
+                        "juego_id": id_juego,
+                        "codigo_serial": codigo_serial
+                    })
+
+                # Construimos el payload unico con la orden y la lista de items
+                payload = {
+                    "id_orden_compra": id_orden_compra,
+                    "items": items_vendidos
+                }
+
+                # Emitimos el evento con la informacion
+                publicar_evento('inventario.codigos_seriales', payload)
+                print(f"[Inventario] codigos seriales para la orden {id_orden_compra} con {len(items_vendidos)} claves.")
 
         except Exception as e_db:
                 if conn:
@@ -123,6 +153,10 @@ def callback_pago_inventario(ch, method, properties, body):
         finally:
             if conn:
                 release_connection(db_name, conn)
+
+        # Publicar nuevo evento para mod de notificaciones
+
+
 
     # Si la compra fue fallida registrar la clave como DISPONIBLE
     elif (estado_pago == "NO APROBADO"):
@@ -136,13 +170,15 @@ def callback_pago_inventario(ch, method, properties, body):
             query = """
                 UPDATE clave_digital
                 SET estado = 'DISPONIBLE', id_orden_compra = NULL 
-                WHERE id_orden_compra = %s;
+                WHERE id_orden_compra = %s
+
             """
             cur.execute(query, (id_orden_compra,))
             conn.commit()
             cur.close()
-            
             print(f"[Inventario] BD Actualizada: claves con orden {id_orden_compra} como DISPONIBLE.")
+
+
 
         except Exception as e_db:
                 if conn:

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { api } from '../api';
+const correoPrueba = "correo.prueba@gmail.com"
 
 const Cart = ({ onNavigate }) => {
   const { cart, removeFromCart, clearCart, loading } = useCart();
@@ -24,7 +25,7 @@ const Cart = ({ onNavigate }) => {
     try {
       const result = await api.checkout({
         usuario_id: 'user-123',
-        email: 'alvaro.burgosandrade@gmail.com',
+        email: correoPrueba,
         metodo_pago: 'tarjeta'
       });
       setCheckoutStatus({ success: true, orderId: result.id_orden_compra });
@@ -63,15 +64,15 @@ const Cart = ({ onNavigate }) => {
             <h3>¿Vaciar carrito?</h3>
             <p>Esta acción eliminará todos los productos que has seleccionado.</p>
             <div style={styles.modalActions}>
-              <button 
-                className="btn-secondary" 
+              <button
+                className="btn-secondary"
                 onClick={() => setShowConfirmModal(false)}
                 style={styles.modalBtn}
               >
                 Cancelar
               </button>
-              <button 
-                className="btn-danger" 
+              <button
+                className="btn-danger"
                 onClick={confirmClearCart}
                 style={styles.modalBtn}
               >
@@ -275,7 +276,7 @@ const styles = {
     fontSize: '0.9rem',
     transition: 'all 0.3s'
   },
-  
+
   headerRow: {
     display: 'flex',
     justifyContent: 'space-between',

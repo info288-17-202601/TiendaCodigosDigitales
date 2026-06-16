@@ -19,7 +19,7 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         # Obtener conexion del pool
         conn = get_connection(db_name)
         cur = conn.cursor()
-        
+
         # Iniciar la transaccion de bloqueo (FOR UPDATE SKIP LOCKED)
         query_bloqueo = """
             SELECT id_clave, codigo_serial 
@@ -31,7 +31,7 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
         # Pasamos las variables como tupla (%s) para evitar inyeccion SQL
         cur.execute(query_bloqueo, (id_juego,))
         clave_encontrada = cur.fetchone()
-        
+
         # Validar stock
         if not clave_encontrada:
             # No hay codigos disponibles o todos estan bloqueados en este milisegundo

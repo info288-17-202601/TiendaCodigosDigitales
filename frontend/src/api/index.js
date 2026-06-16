@@ -49,9 +49,6 @@ export const api = {
     }
   },
 
-  // --- NUEVAS FUNCIONES DE ELIMINACIÓN ---
-
-  // Elimina una instancia de un juego específico
   removeFromCart: async (usuarioId, juegoId) => {
     try {
       const res = await fetch(`${API_URL}/ventas/carrito/${usuarioId}/item/${juegoId}`, {
@@ -65,7 +62,6 @@ export const api = {
     }
   },
 
-  // Vacía todo el carrito del usuario
   clearCart: async (usuarioId) => {
     try {
       const res = await fetch(`${API_URL}/ventas/carrito/${usuarioId}`, {

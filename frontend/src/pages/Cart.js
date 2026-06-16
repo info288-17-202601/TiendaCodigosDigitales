@@ -24,7 +24,7 @@ const Cart = ({ onNavigate }) => {
     try {
       const result = await api.checkout({
         usuario_id: 'user-123',
-        email: 'user@example.com',
+        email: 'alvaro.burgosandrade@gmail.com',
         metodo_pago: 'tarjeta'
       });
       setCheckoutStatus({ success: true, orderId: result.id_orden_compra });

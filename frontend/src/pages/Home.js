@@ -48,7 +48,7 @@ const Home = ({ onNavigate }) => {
           <div style={styles.loading}>No se encontraron juegos.</div>
         ) : (
           games.map(game => (
-            <div key={game.id_juego} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
+            <div key={game.id} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
               <div style={styles.cardImagePlaceholder}>
                 {game.titulo ? game.titulo[0] : '?'}
               </div>

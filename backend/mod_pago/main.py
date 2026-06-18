@@ -53,7 +53,7 @@ def conseguir_cartera():
 # PUT /cartera
 # Content-Type: application/json
 # {
-#     "usuario_id": 1,
+#     "usuario_id": "1",
 #     "tipo_tarjeta": "VISA",
 #     "ultimos_4": "1234"
 # }

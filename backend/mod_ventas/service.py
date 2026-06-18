@@ -22,7 +22,7 @@ def procesar_checkout(usuario_id, email, metodo_pago):
         # Deserializar el objeto completo segun el contrato
         items_carrito = carrito.get("items", [])
         region_compra = carrito.get("region_compra", "LATAM")   # LATAM como Fallback
-        total_estimado = carrito.get("total_estimado", 0)
+        monto_a_cobrar = carrito.get("total_estimado", 0)
         
         if not items_carrito:
             print(f"[Ventas] Checkout rechazado. El carrito no tiene items.")
@@ -44,7 +44,7 @@ def procesar_checkout(usuario_id, email, metodo_pago):
                 INSERT INTO orden_compra (id_orden_compra, id_usuario, metodo_pago, total_pagado, estado_pago) 
                 VALUES (%s, %s, %s, %s, 'PENDIENTE');
             """
-            cur.execute(query_insert, (id_orden_compra, usuario_id, metodo_pago, total_estimado))
+            cur.execute(query_insert, (id_orden_compra, usuario_id, metodo_pago, monto_a_cobrar))
             conn.commit()
             cur.close()
             print(f"[Ventas] BD: Orden {id_orden_compra} registrada como PENDIENTE.")
@@ -66,7 +66,7 @@ def procesar_checkout(usuario_id, email, metodo_pago):
             "region": region_compra,
             "items": items_carrito,
             "metodo_pago": metodo_pago,
-            "total_estimado": total_estimado,
+            "monto_a_cobrar": monto_a_cobrar,
         }
 
         # Publicar el evento

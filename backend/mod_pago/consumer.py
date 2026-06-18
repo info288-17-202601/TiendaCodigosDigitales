@@ -9,7 +9,7 @@ def verificar_compra(ch, method, properties, body):
     try:
         datos_orden = json.loads(body)
         id_orden_compra = datos_orden.get('id_orden_compra') 
-        total_estimado = datos_orden.get('monto_a_cobrar')
+        monto_a_cobrar = datos_orden.get('monto_a_cobrar')
         usuario_id = datos_orden.get('usuario_id')
         usuario_email = datos_orden.get('usuario_email')
         metodo_pago = datos_orden.get('metodo_pago')
@@ -17,7 +17,7 @@ def verificar_compra(ch, method, properties, body):
         
         #Saca el token
 
-        payload = procesar_pago(total_estimado,usuario_id,usuario_email,id_orden_compra,region,metodo_pago,None)
+        payload = procesar_pago(monto_a_cobrar,usuario_id,usuario_email,id_orden_compra,region,metodo_pago,None)
         
         publicar_evento_exchange('pago.procesado',payload)
         ch.basic_ack(delivery_tag=method.delivery_tag)

@@ -18,7 +18,7 @@ def procesar_orden_creada(ch, method, properties, body):
         region = datos_orden.get('region', 'LATAM')
         items = datos_orden.get('items', [])
         metodo_pago = datos_orden.get('metodo_pago')
-        total_estimado = datos_orden.get('total_estimado')
+        monto_a_cobrar = datos_orden.get('monto_a_cobrar')
 
         
         if not items:
@@ -76,7 +76,7 @@ def procesar_orden_creada(ch, method, properties, body):
                 "items": reservas_exitosas, 
                 "estado_reserva": "EXITO",
                 "metodo_pago": metodo_pago,
-                "monto_a_cobrar": total_estimado,
+                "monto_a_cobrar": monto_a_cobrar,
             }
             publicar_evento('inventario.reservado', evento_exito)
             print(f"[Inventario] exito total. Evento 'inventario.reservado' publicado.")
@@ -91,7 +91,7 @@ def procesar_orden_creada(ch, method, properties, body):
 def callback_pago_inventario(ch, method, properties, body):
     payload = json.loads(body)
     id_orden_compra = payload.get('id_orden_compra')
-    metodo_pago = payload.get('metodo_pago')
+    usuario_email = payload.get('usuario_email')
     estado_pago = payload.get('estado_pago')
     region = payload.get('region')
 
@@ -137,11 +137,12 @@ def callback_pago_inventario(ch, method, properties, body):
                 # Construimos el payload unico con la orden y la lista de items
                 payload = {
                     "id_orden_compra": id_orden_compra,
+                    "usuario_email": usuario_email,
                     "items": items_vendidos
                 }
 
                 # Emitimos el evento con la informacion
-                publicar_evento('inventario.codigos_seriales', payload)
+                publicar_evento('inventario.orden_completada', payload)
                 print(f"[Inventario] codigos seriales para la orden {id_orden_compra} con {len(items_vendidos)} claves.")
 
         except Exception as e_db:

@@ -65,12 +65,12 @@ Payload:
   }
 }
 
-## Event: Pago procesado
+## Evento: Pago procesado
 Nombre exacto en codigo: pago.procesado
 
 Publicador: Modulo de pago
 
-consumidores: Modulo de inventario - Modulo de ventas
+consumidores: Modulo de inventario - Modulo de ventas - Modulo de notificacione
 
 Cuando: El pago se procesa de forma exitosa o no exitosa, se incluye resultado en payload
 
@@ -97,7 +97,7 @@ Payload:
 }
 
 
-## Event: Orden completada
+## Evento: Orden completada
 Nombre exacto en codigo: inventario.orden_completada
 
 Publicador: Modulo de inventario
@@ -114,5 +114,21 @@ Payload:
     "juego_id": "splatoon-3-ext",
     "codigo_serial": "123abc"
   }
+}
+
+## Evento: cambio de stock
+Nombre exacto en codigo: inventario.cambio_stock
+
+Publicador: Modulo de inventario
+
+Consumidor: Modulo de busqueda
+
+Cuando: El modulo de inventario encuentra que despues de cambiar el estado de un producto, no may mas stock de este producto, o se cancela una reserva o venta y pasa de no haber ni uno a haber almenos uno
+
+Payload:
+{
+  "juego_id": "splatoon-3-ext",
+  "region": "LATAM",
+  "Motivo": "DISPNIBLE" <- tambien puede ser "AGOTADO"
 }
 

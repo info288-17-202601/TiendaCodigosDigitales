@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import GameDetail from './pages/GameDetail';
 import Cart from './pages/Cart';
+import Admin from './pages/Admin';
 import { CartProvider } from './context/CartContext';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         {currentView === 'home' && <Home onNavigate={navigate} />}
         {currentView === 'detail' && <GameDetail gameId={selectedGameId} onNavigate={navigate} />}
         {currentView === 'cart' && <Cart onNavigate={navigate} />}
+        {currentView === 'admin' && <Admin />}
       </main>
     </CartProvider>
   );

@@ -11,7 +11,16 @@ const Home = ({ onNavigate }) => {
     const fetchGames = async () => {
       setLoading(true);
       const data = await api.searchGames(query);
-      setGames(data.resultados || []);
+      const gamesResult = data.resultados || [];
+
+      const gamesWithStock = await Promise.all(
+        gamesResult.map(async (game) => {
+          const stockData = await api.getStock(game.id, 'LATAM');
+          return { ...game, stock: stockData?.stock_disponible || 0 };
+        })
+      );
+
+      setGames(gamesWithStock);
       setLoading(false);
     };
     fetchGames();
@@ -47,17 +56,38 @@ const Home = ({ onNavigate }) => {
         ) : games.length === 0 ? (
           <div style={styles.loading}>No se encontraron juegos.</div>
         ) : (
-          games.map(game => (
-            <div key={game.id} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
-              <div style={styles.cardImagePlaceholder}>
-                {game.titulo ? game.titulo[0] : '?'}
+          games.map(game => {
+            const isAvailable = !game.region_bloqueo || game.region_bloqueo === 'LATAM' || game.region_bloqueo === 'Global';
+
+            return (
+              <div key={game.id} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
+                <img
+                  src={`/${game.id}.png`}
+                  alt={game.titulo}
+                  style={{ ...styles.cardImagePlaceholder, objectFit: 'cover', width: '100%' }}
+                  onError={(e) => {
+                    if (!e.target.dataset.triedJpg) {
+                      e.target.dataset.triedJpg = 'true';
+                      e.target.src = `/${game.id}.jpg`;
+                    } else {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/300x180?text=No+Image';
+                    }
+                  }}
+                />
+                <div style={styles.cardContent}>
+                  <h3>{game.titulo}</h3>
+                  <p style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{game.stock ? '' : 'Agotado'}</p>
+                  {!isAvailable && (
+                    <p style={{ color: 'var(--danger)', fontWeight: 'bold', margin: 0, marginTop: '0.5rem' }}>
+                      No disponible en tu país
+                    </p>
+                  )}
+                </div>
               </div>
-              <div style={styles.cardContent}>
-                <h3>{game.titulo}</h3>
-                <p style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</p>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -97,10 +127,10 @@ const styles = {
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem'
+    gap: '1rem',
   },
   cardImagePlaceholder: {
-    height: '180px',
+    height: '360px',
     background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-primary))',
     borderRadius: '8px',
     display: 'flex',

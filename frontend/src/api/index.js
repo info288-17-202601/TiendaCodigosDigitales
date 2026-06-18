@@ -23,6 +23,17 @@ export const api = {
     }
   },
 
+  getStock: async (id, region = 'LATAM') => {
+    try {
+      const res = await fetch(`${API_URL}/inventario/stock/${id}?region=${region}`);
+      if (!res.ok) throw new Error('Failed to fetch stock');
+      return await res.json();
+    } catch (e) {
+      console.error(e);
+      return { stock_disponible: 0 };
+    }
+  },
+
   getCart: async () => {
     try {
       const res = await fetch(`${API_URL}/ventas/carrito`);
@@ -91,6 +102,23 @@ export const api = {
     } catch (e) {
       console.error(e);
       throw e;
+    }
+  },
+
+  addStock: async (payload) => {
+    try {
+      const res = await fetch(`http://localhost/admin/admin/agregar_stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await res.json() : null;
+      if (!res.ok) return { error: data?.error || 'Error al agregar stock' };
+      return data;
+    } catch (e) {
+      console.error(e);
+      return { error: 'Error de red' };
     }
   }
 };

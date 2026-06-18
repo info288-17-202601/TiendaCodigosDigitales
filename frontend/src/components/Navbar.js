@@ -22,13 +22,20 @@ const Navbar = ({ onNavigate, currentView }) => {
           </button>
 
           <button
+            className={`btn-secondary ${currentView === 'admin' ? 'active' : ''}`}
+            onClick={() => onNavigate('admin')}
+          >
+            MODO ADMIN
+          </button>
+
+          <button
             className="btn-primary"
             onClick={() => onNavigate('cart')}
           >
-          <div style={styles.cartLink} onClick={() => onNavigate('cart')}>
-            <img src="/cart.svg" alt="Carrito" style={styles.cartIcon} />
-            <span>Carrito ({totalItems})</span>
-          </div>
+            <div style={styles.cartLink} onClick={() => onNavigate('cart')}>
+              <img src="/cart.svg" alt="Carrito" style={styles.cartIcon} />
+              <span>Carrito ({totalItems})</span>
+            </div>
 
           </button>
         </div>

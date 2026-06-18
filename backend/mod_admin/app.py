@@ -3,12 +3,14 @@ import sys
 import os
 import psycopg2
 import json
+from flask_cors import CORS
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared.database import get_inventory_db_name, get_connection, release_connection
 from shared.messaging import publicar_evento
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/admin/agregar_stock', methods=['POST'])
 def agregar_stock():

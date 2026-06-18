@@ -23,6 +23,23 @@ const Cart = ({ onNavigate }) => {
   const handleCheckout = async () => {
     setIsProcessing(true);
     try {
+      // Antes de invocar al backend, verificamos stock para cada item desde el frontend
+      for (const item of cart.items) {
+        try {
+          const stockData = await api.getStock(item.juego_id, cart.region_compra || 'LATAM');
+          const disponible = stockData?.stock_disponible ?? 0;
+          if (disponible < item.cantidad) {
+            setCheckoutStatus({ success: false, error: `No queda stock suficiente de "${item.titulo}" (solicitado: ${item.cantidad}, disponible: ${disponible})` });
+            setIsProcessing(false);
+            return;
+          }
+        } catch (e) {
+          setCheckoutStatus({ success: false, error: 'No se pudo verificar el stock. Intenta de nuevo.' });
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       const result = await api.checkout({
         usuario_id: 'user-123',
         email: correoPrueba,

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { api } from '../api';
-const correoPrueba = process.env.REACT_APP_CORREO_DESTINO;
+const correoPrueba = "correo.prueba@gmail.com";
 
 const Cart = ({ onNavigate }) => {
   const { cart, removeFromCart, clearCart, loading } = useCart();

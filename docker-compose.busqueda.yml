@@ -17,8 +17,8 @@ services:
       - ./backend:/app
     command: >
       sh -c "
-      echo 'Esperando 30 segundos a que Postgres se inicialice...' &&
-      sleep 30 &&
+      echo 'Esperando 40 segundos a que Postgres se inicialice...' &&
+      sleep 40 &&
       python mod_busqueda/sincronizar_solr.py &&
       python mod_busqueda/service.py
       "

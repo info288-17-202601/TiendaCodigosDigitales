@@ -8,6 +8,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE DATABASE db_ventas;
     CREATE DATABASE db_perfil;
     CREATE DATABASE db_inv_latam;
+    CREATE DATABASE db_inv_eu;
+    CREATE DATABASE db_inv_us;
+    CREATE DATABASE db_inv_asia;
 EOSQL
 
 # 2. User DB tables
@@ -83,6 +86,51 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_latam" <<-E
     INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
     ('splatoon-3-ext', 'LATAM-ABCD-1234', 'DISPONIBLE'),
     ('splatoon-3-ext', 'LATAM-EFGH-5678', 'DISPONIBLE');
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_eu" <<-EOSQL
+    CREATE TABLE clave_digital (
+        id_clave SERIAL PRIMARY KEY,
+        id_juego VARCHAR(50) NOT NULL,
+        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
+        estado VARCHAR(20) NOT NULL, 
+        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
+        id_orden_compra VARCHAR(50) DEFAULT NULL
+    );
+    -- Insertar 2 códigos de prueba para simular stock
+    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
+    ('splatoon-3-ext', 'EU-ABCA-9876', 'DISPONIBLE'),
+    ('splatoon-3-ext', 'EU-EGGH-5431', 'DISPONIBLE');
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_us" <<-EOSQL
+    CREATE TABLE clave_digital (
+        id_clave SERIAL PRIMARY KEY,
+        id_juego VARCHAR(50) NOT NULL,
+        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
+        estado VARCHAR(20) NOT NULL, 
+        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
+        id_orden_compra VARCHAR(50) DEFAULT NULL
+    );
+    -- Insertar 2 códigos de prueba para simular stock
+    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
+    ('splatoon-3-ext', 'US-ACBH-9885', 'DISPONIBLE'),
+    ('splatoon-3-ext', 'US-EGJH-5433', 'DISPONIBLE');
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_asia" <<-EOSQL
+    CREATE TABLE clave_digital (
+        id_clave SERIAL PRIMARY KEY,
+        id_juego VARCHAR(50) NOT NULL,
+        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
+        estado VARCHAR(20) NOT NULL, 
+        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
+        id_orden_compra VARCHAR(50) DEFAULT NULL
+    );
+    -- Insertar 2 códigos de prueba para simular stock
+    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
+    ('splatoon-3-ext', 'ASIA-AABH-1885', 'DISPONIBLE'),
+    ('splatoon-3-ext', 'ASIA-EGKH-7433', 'DISPONIBLE');
 EOSQL
 
 # 6. Profile DB tables

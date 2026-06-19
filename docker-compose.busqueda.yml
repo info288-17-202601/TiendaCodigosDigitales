@@ -69,3 +69,4 @@ networks:
     depends_on:
       - rabbitmq_broker
       - postgres_db
+      - redis_cache

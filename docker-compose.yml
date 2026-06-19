@@ -115,6 +115,7 @@ services:
     depends_on:
       - solr_engine
       - postgres_db
+      - redis_cache
   # Worker exclusivo para escuchar eventos para 
   # mantener sincronizado el catálogo del buscador con la realidad del inventario.
   search_worker:
@@ -134,6 +135,7 @@ services:
     depends_on:
       - rabbitmq_broker
       - postgres_db
+      - redis_cache
 # 9. Modulo de ventas
   ventas_api:
     build: 

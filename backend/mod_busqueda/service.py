@@ -1,11 +1,14 @@
 """ service.py: Es la API web (Flask). Se encarga de responder a las búsquedas de los usuarios """
 
 import os
+import json
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 # Importamos pysolr (la librería para comunicarnos con Solr)
 import pysolr
+# Importamos redis para la caché
+import redis
 
 import psycopg2 
 from psycopg2.extras import RealDictCursor
@@ -34,12 +37,43 @@ def get_db_connection():
 # Creamos el "cliente" que hablará con Solr
 solr = pysolr.Solr(SOLR_URL, always_commit=True)
 
+# Configuramos la conexión a Redis para la caché
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=6379,
+    db=0,
+    decode_responses=True
+)
+
+# Test de conexión a Redis al iniciar
+try:
+    redis_client.ping()
+    print(f"[✓] Redis conectado exitosamente en {REDIS_HOST}:6379")
+except Exception as e:
+    print(f"[✗] ERROR: No se pudo conectar a Redis en {REDIS_HOST}:6379 - {e}")
+
 # 3. Creamos la "Ruta" o "Endpoint" de búsqueda inteligente
 @app.route('/buscarPorTitulo', methods=['GET'])
 def buscar_juegos():
     # Ahora atrapamos un parámetro normal, por ejemplo: /buscarPorTitulo?t=splatoon
     # Si no envían nada, el valor será un texto vacío ''
-    nombre_juego = request.args.get('t', '') 
+    nombre_juego = request.args.get('t', '').strip() 
+
+    if nombre_juego != '':
+        cache_key = f"busqueda:titulo:{nombre_juego.lower()}"
+        
+        try:
+            # Buscar en Redis (Cache Hit)
+            resultado_cache = redis_client.get(cache_key)
+            if resultado_cache:
+                print(f"[Caché] Respondiendo '{nombre_juego}' desde RAM.")
+                return jsonify(json.loads(resultado_cache)), 200
+                
+        except Exception as e:
+            print(f"[!] Advertencia: No se pudo conectar a Redis: {e}")
+            # Si Redis falla, no botamos el sistema, seguimos con Solr.
+    print(f"[Caché] No estaba en caché. Consultando a Solr por '{nombre_juego}'...")
 
     if nombre_juego == '' or nombre_juego == '*:*':
         # Si el usuario no escribió nada o envía *:*, le traemos todo el catálogo
@@ -58,11 +92,19 @@ def buscar_juegos():
         for juego in resultados:
             lista_juegos.append(juego) 
 
-        return jsonify({
-            "mensaje": "Búsqueda exitosa",
+        respuesta = {
+            "mensaje": f"Búsqueda por título exitosa",
+            "criterio": nombre_juego if nombre_juego else "Todas",
             "cantidad_encontrada": len(lista_juegos),
-            "resultados": lista_juegos
-        }), 200
+            "resultados": lista_juegos}
+        # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
+        try: # Utilizamos .setex que es como .set pero con expiración.
+            redis_client.setex(cache_key, 600, json.dumps(respuesta))
+            print(f"[Caché] Guardando resultado de '{nombre_juego}' en caché por 10 minutos.")
+        except Exception as e:
+            print(f"[!] Advertencia: No se pudo guardar en Redis: {e}")
+
+        return jsonify(respuesta), 200
 
     except Exception as e:
         return jsonify({"error": "Fallo en el servidor de búsqueda", "detalle": str(e)}), 500
@@ -71,9 +113,23 @@ def buscar_juegos():
 @app.route('/buscarPorPlataforma', methods=['GET'])
 def buscar_por_plataforma():
     # Atrapamos el parámetro 'p' de la URL. Ejemplo: /buscarPorPlataforma?p=Nintendo
-    plataforma_buscada = request.args.get('p', '') 
+    plataforma_buscada = request.args.get('p', '').strip()
 
-    
+    if plataforma_buscada != '':
+        cache_key = f"busqueda:plataforma:{plataforma_buscada.lower()}"
+        
+        try:
+            # Buscar en Redis (Cache Hit)
+            resultado_cache = redis_client.get(cache_key)
+            if resultado_cache:
+                print(f"[Caché] Respondiendo '{plataforma_buscada}' desde RAM.")
+                return jsonify(json.loads(resultado_cache)), 200
+                
+        except Exception as e:
+            print(f"[!] Advertencia: No se pudo conectar a Redis: {e}")
+            # Si Redis falla, no botamos el sistema, seguimos con Solr.
+    print(f"[Caché] No estaba en caché. Consultando a Solr por '{plataforma_buscada}'...")
+
     if plataforma_buscada == '':
         # Si no especifican plataforma, trae todo el catálogo
         query_solr = '*:*'
@@ -91,42 +147,67 @@ def buscar_por_plataforma():
         for juego in resultados:
             lista_juegos.append(juego) 
 
-        return jsonify({
+        respuesta = {
             "mensaje": f"Búsqueda por plataforma exitosa",
             "criterio": plataforma_buscada if plataforma_buscada else "Todas",
             "cantidad_encontrada": len(lista_juegos),
-            "resultados": lista_juegos
-        }), 200
+            "resultados": lista_juegos}
+
+        # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
+        try:
+            redis_client.setex(cache_key, 600, json.dumps(respuesta))
+            print(f"[Caché] Guardando resultado de '{plataforma_buscada}' en caché por 10 minutos.")
+        except Exception as e:
+            print(f"[!] Advertencia: No se pudo guardar en Redis: {e}")
+
+        # Respondemos al cliente con los resultados de Solr    
+        return jsonify(respuesta), 200
 
     except Exception as e:
         return jsonify({"error": "Fallo en el servidor de búsqueda", "detalle": str(e)}), 500
     
 
-# Nueva ruta que recibe el ID del juego en la URL (ej: /juego/splatoon-3-ext)
+# Ruta que recibe el ID del juego en la URL (ej: /juego/splatoon-3-ext)
 @app.route('/juego/<id_juego>', methods=['GET'])
 def obtener_detalle_juego(id_juego):
-    conn = None
+    # Generamos la clave de caché
+    cache_key = f"detalle:juego:{id_juego}"
+    
     try:
-        conn = get_db_connection()
-        # RealDictCursor hace que la respuesta sea {"titulo": "x", "precio": y} en vez de una tupla rara ("x", y)
-        cur = conn.cursor(cursor_factory=RealDictCursor) 
+        # Buscar en Redis
+        resultado_cache = redis_client.get(cache_key)
+        if resultado_cache:
+            print(f"[Caché] Respondiendo detalles de '{id_juego}' desde RAM.")
+            return jsonify(json.loads(resultado_cache)), 200
+            
+    except Exception as e:
+        print(f"[!] Advertencia: No se pudo conectar a Redis: {e}")
+        # Si Redis falla, no botamos el sistema, seguimos con Solr.
+    
+    print(f"[Caché] No estaba en caché. Consultando Solr por '{id_juego}'...")
+    
+    try:
+        # Buscamos el juego por su ID en Solr
+        query_solr = f'id:{id_juego}'
+        resultados = solr.search(query_solr)
         
-        # Hacemos la consulta SQL a la tabla catalogo
-        cur.execute("SELECT * FROM catalogo WHERE id_juego = %s", (id_juego,))
-        juego = cur.fetchone() # fetchone() trae solo 1 resultado
-        
-        cur.close()
-        
-        if juego is None:
+        if len(resultados) == 0:
             return jsonify({"error": "Juego no encontrado"}), 404
+        
+        # Tomamos el primer resultado (debe haber solo uno por ID)
+        juego = resultados[0]
+        
+        # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
+        try:
+            redis_client.setex(cache_key, 600, json.dumps(juego))
+            print(f"[Caché] Guardando detalles de '{id_juego}' en caché por 10 minutos.")
+        except Exception as e:
+            print(f"[!] Advertencia: No se pudo guardar en Redis: {e}")
             
         return jsonify(juego), 200
 
     except Exception as e:
-        return jsonify({"error": "Fallo en la base de datos", "detalle": str(e)}), 500
-    finally:
-        if conn is not None:
-            conn.close() 
+        return jsonify({"error": "Fallo en el servidor de búsqueda", "detalle": str(e)}), 500 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)

@@ -28,7 +28,7 @@ try:
     cur.execute("SELECT * FROM catalogo")
     juegos = cur.fetchall()
     
-    # 4. Formatear para Solr
+    # 4. Formatear para Solr (definimos los campos y cómo los transformamos)
     documentos = []
     for juego in juegos:
         disp = juego.get('disponibilidad_regional')

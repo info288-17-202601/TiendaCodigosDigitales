@@ -105,7 +105,13 @@ services:
       - "5002:5002"
     volumes:
       - ./backend:/app
-    command: python mod_busqueda/service.py
+    command: >
+      sh -c "
+      echo 'Esperando 30 segundos a que Postgres se inicialice...' &&
+      sleep 30 &&
+      python mod_busqueda/sincronizar_solr.py &&
+      python mod_busqueda/service.py
+      "
     depends_on:
       - solr_engine
       - postgres_db

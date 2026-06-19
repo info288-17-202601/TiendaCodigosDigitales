@@ -1,4 +1,4 @@
-e#!/bin/sh
+#!/bin/sh
 set -e
 
 # 1. Create different databases

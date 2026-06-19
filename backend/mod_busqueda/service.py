@@ -10,8 +10,6 @@ import pysolr
 import psycopg2 
 from psycopg2.extras import RealDictCursor
 
-import threading  # Librería nativa para procesos en segundo plano
-from consumer import iniciar_escucha_busqueda
 
 # 1. Inicializamos la aplicación Flask
 app = Flask(__name__)
@@ -131,12 +129,4 @@ def obtener_detalle_juego(id_juego):
             conn.close() 
 
 if __name__ == '__main__':
-
-    # Arrancamos el consumidor de RabbitMQ en un hilo de fondo (background thread)
-    # daemon=True asegura que si Flask se apaga, el consumidor también se apague.
-    hilo_consumidor = threading.Thread(target=iniciar_escucha_busqueda, daemon=True)
-    hilo_consumidor.start()
-    print("[*] Hilo del consumidor RabbitMQ iniciado en segundo plano.", flush=True)
-
-
     app.run(host='0.0.0.0', port=5002)

@@ -49,3 +49,23 @@ services:
 networks:
   red_tienda:
     external: true
+
+# Worker exclusivo para escuchar eventos para 
+# mantener sincronizado el catálogo del buscador con la realidad del inventario.
+  search_worker:
+    build:
+      context: ./backend
+    container_name: search_worker
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+      echo 'Esperando 25s a que RabbitMQ esté 100% listo...' &&
+      sleep 25 &&
+      python mod_busqueda/consumer.py
+      "
+    depends_on:
+      - rabbitmq_broker
+      - postgres_db

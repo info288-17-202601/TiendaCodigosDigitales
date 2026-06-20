@@ -195,7 +195,7 @@ def obtener_detalle_juego(id_juego):
             return jsonify({"error": "Juego no encontrado"}), 404
         
         # Tomamos el primer resultado (debe haber solo uno por ID)
-        juego = resultados[0]
+        juego = list(resultados)[0]
         
         # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
         try:

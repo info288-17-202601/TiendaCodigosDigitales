@@ -258,5 +258,20 @@ services:
       - postgres_db
       - rabbitmq_broker
 
+  usuario_api:
+    build:
+      context: ./backend
+    container_name: modulo_usuarios
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    command: python -u -m mod_usuario.api
+    ports:
+      - "5006:5006"
+    depends_on:
+      - postgres_db
+      - rabbitmq_broker
+      - redis
 volumes:
   pg_data:

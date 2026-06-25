@@ -8,7 +8,6 @@ import json
 from argon2 import PasswordHasher # Para Codificar
 # Definicion principal del Modulo de usuarios
 
-# Clave de incriptacion : FUTURO FUTURO FUTURO
 app = Flask(__name__)
 
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
@@ -56,7 +55,6 @@ def getUsuario():
         except Exception as e:
             print(f"No se encontro la conexion con la cache\n Detalles: {e}")
 
-    
         # Conexiando
         conn = None
         try:
@@ -202,7 +200,7 @@ def login():
         if conn:
             release_connection("db_usuarios",conn)
 
-# Solicitar datos de un usuario
+# Solicitud cambio de contraseña para un usuario
 #
 # GET /usuario_olvidado?email=algo
 @app.route('/usuario_olvidado',methods=['GET'])
@@ -237,6 +235,22 @@ def meolvide():
         cursor.close()
         if conn:
             release_connection("db_usuarios",conn)
+
+# Solicitud para salir de la sesion
+#
+# GET /logout?usuario_id=algo
+@app.route('/logout',methods=['GET'])
+def logout():
+    usuario_id = request.args.get('usuario_id')
+    if not usuario_id :
+        return jsonify({"error":"No se entregaron los datos"}),400
+    
+    try:
+        redis_client.delete(f"usuario:{usuario_id}")
+        return jsonify({"mensaje":"La sesion fue cerrada con exito"}),200
+
+    except Exception as e:
+        return jsonify({"error":"hubo un error al intentar cerrar la sesion","detalle":e}),400
 
 if __name__ == "__main__":
     main()

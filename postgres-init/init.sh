@@ -16,7 +16,7 @@ EOSQL
 # 2. User DB tables
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_usuarios" <<-EOSQL
     CREATE TABLE usuario (
-        id_usuario VARCHAR(50) PRIMARY KEY,
+        id_usuario UUID PRIMARY KEY,
         usuario VARCHAR(100) NOT NULL,
         email VARCHAR(150) UNIQUE NOT NULL,
         contrasena VARCHAR(255) NOT NULL,

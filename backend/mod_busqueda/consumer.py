@@ -11,6 +11,9 @@ from psycopg2.extras import RealDictCursor
 from shared.messaging import iniciar_consumidor
 from shared.database import get_connection, release_connection
 
+DB_USER = os.environ.get("DB_USER_CATALOGO", "user_catalogo")
+DB_PASS = os.environ.get("DB_PASS_CATALOGO", "PassCat789")
+
 # Configuramos la conexión a Solr
 SOLR_URL = 'http://solr_engine:8983/solr/catalogo'
 solr = pysolr.Solr(SOLR_URL, always_commit=True)
@@ -33,7 +36,7 @@ def callback_busqueda(ch, method, properties, body):
             print(f" [*] Procesando agotamiento de '{id_juego}' en la región {region}...", flush=True)
             
             # ACTUALIZAR POSTGRESQL 
-            conn = get_connection("db_catalogo")
+            conn = get_connection("db_catalogo", DB_USER, DB_PASS)
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
             # Traemos el juego actual para ver su JSON de disponibilidad

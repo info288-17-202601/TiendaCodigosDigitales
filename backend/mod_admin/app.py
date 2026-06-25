@@ -9,8 +9,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared.database import get_inventory_db_name, get_connection, release_connection
 from shared.messaging import publicar_evento
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+DB_USER = os.environ.get("DB_USER_INVENTARIO", "user_inventario")
+DB_PASS = os.environ.get("DB_PASS_INVENTARIO", "PassInv654")
+
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
 @app.route('/admin/agregar_stock', methods=['POST'])
 def agregar_stock():
@@ -25,7 +29,7 @@ def agregar_stock():
     db_name = get_inventory_db_name(region)
     conn = None
     try:
-        conn = get_connection(db_name)
+        conn = get_connection(db_name, DB_USER, DB_PASS)
         cur = conn.cursor()
 
         # Insertar códigos en la tabla clave_digital 

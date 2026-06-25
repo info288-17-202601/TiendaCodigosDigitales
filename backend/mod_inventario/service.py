@@ -1,7 +1,11 @@
+import os
 import json
 # Para conectarse a los shards
 from shared.database import get_inventory_db_name, get_connection, release_connection
 from shared.messaging import publicar_evento
+
+DB_USER = os.environ.get("DB_USER_INVENTARIO", "user_inventario")
+DB_PASS = os.environ.get("DB_PASS_INVENTARIO", "PassInv654")
 
 
 def reservar_codigo_seguro(id_juego, region, id_orden_compra):
@@ -17,7 +21,7 @@ def reservar_codigo_seguro(id_juego, region, id_orden_compra):
     
     try:
         # Obtener conexion del pool
-        conn = get_connection(db_name)
+        conn = get_connection(db_name, DB_USER, DB_PASS)
         cur = conn.cursor()
 
         # Iniciar la transaccion de bloqueo (FOR UPDATE SKIP LOCKED)
@@ -102,7 +106,7 @@ def liberar_codigo_seguro(id_clave, region):
     db_name = get_inventory_db_name(region)
     conn = None
     try:
-        conn = get_connection(db_name)
+        conn = get_connection(db_name, DB_USER, DB_PASS)
         cur = conn.cursor()
         
         query_rollback = """

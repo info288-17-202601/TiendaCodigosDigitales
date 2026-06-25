@@ -35,8 +35,12 @@ def get_inventory_db_name(region):
 
 
 # Obtiene y retorna una conexion desde la piscina de <db_name>
-def get_connection(db_name):
+def get_connection(db_name, db_user=None, db_pass=None):
     """Obtiene y retorna una conexion desde la piscina de <db_name>"""
+    # Fallback
+    user = db_user if db_user else os.environ.get("POSTGRES_USER", "admin")
+    password = db_pass if db_pass else os.environ.get("POSTGRES_PASSWORD", "adminpassword")
+
     with _pool_lock:
         if db_name not in _connection_pools:
             try:
@@ -46,11 +50,11 @@ def get_connection(db_name):
                     host=DB_HOST,
                     port=DB_PORT,
                     database=db_name,
-                    user=DB_USER,
-                    password=DB_PASS,
+                    user=user,
+                    password=password,
                     cursor_factory=RealDictCursor
                 )
-                print(f"[Database] Piscina de conexiones creada para '{db_name}'")
+                print(f"[Database] Piscina creada para '{db_name}' con usuario '{user}'")
             except Exception as e:
                 print(f"[!] Error creando el pool para '{db_name}': {e}")
                 raise e

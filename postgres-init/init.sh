@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# 1. Create different databases
+# 1. Create different databases, users, and grant privileges
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     CREATE DATABASE db_usuarios;
     CREATE DATABASE db_catalogo;
@@ -11,6 +11,23 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE DATABASE db_inv_eu;
     CREATE DATABASE db_inv_us;
     CREATE DATABASE db_inv_asia;
+
+    -- Crear Usuarios Aislados (Las contraseñas vendrán del .env)
+    CREATE USER ${DB_USER_USUARIOS} WITH PASSWORD '${DB_PASS_USUARIOS}';
+    CREATE USER ${DB_USER_CATALOGO} WITH PASSWORD '${DB_PASS_CATALOGO}';
+    CREATE USER ${DB_USER_VENTAS} WITH PASSWORD '${DB_PASS_VENTAS}';
+    CREATE USER ${DB_USER_INVENTARIO} WITH PASSWORD '${DB_PASS_INVENTARIO}';
+    CREATE USER ${DB_USER_PAGOS} WITH PASSWORD '${DB_PASS_PAGOS}';
+
+    -- Asignar dueños de las Bases de Datos
+    GRANT ALL PRIVILEGES ON DATABASE db_usuarios TO ${DB_USER_USUARIOS};
+    GRANT ALL PRIVILEGES ON DATABASE db_catalogo TO ${DB_USER_CATALOGO};
+    GRANT ALL PRIVILEGES ON DATABASE db_ventas TO ${DB_USER_VENTAS};
+    GRANT ALL PRIVILEGES ON DATABASE db_perfil TO ${DB_USER_PAGOS};
+    GRANT ALL PRIVILEGES ON DATABASE db_inv_latam TO ${DB_USER_INVENTARIO};
+    GRANT ALL PRIVILEGES ON DATABASE db_inv_eu TO ${DB_USER_INVENTARIO};
+    GRANT ALL PRIVILEGES ON DATABASE db_inv_us TO ${DB_USER_INVENTARIO};
+    GRANT ALL PRIVILEGES ON DATABASE db_inv_asia TO ${DB_USER_INVENTARIO};
 EOSQL
 
 # 2. User DB tables
@@ -22,6 +39,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_usuarios" <<-EO
         contrasena VARCHAR(255) NOT NULL,
         region VARCHAR(20) NOT NULL
     );
+    -- Dar permisos a nivel de tablas
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_USUARIOS};    
 EOSQL
 
 # 3. Catalog DB tables
@@ -56,6 +75,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
     ('spiderman-2', 'Marvel''s Spider-Man 2', 'PlayStation 5', 59990.00, '{"LATAM": true, "US": false, "EU": false}'::jsonb),
     ('tlou-part1', 'The Last of Us Part I', 'PlayStation 5', 49990.00, '{"LATAM": false, "US": false, "EU": false}'::jsonb), 
     ('elden-ring-ps5', 'Elden Ring', 'PlayStation 5', 44990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb);
+
+    -- Dar permisos a nivel de tablas
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_CATALOGO};
 EOSQL
 
 # 4. Sales DB tables
@@ -70,68 +92,31 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_ventas" <<-EOSQ
         motivo VARCHAR(500)
         -- Estados: PENDIENTE, PAGADO, COMPENSADO, FALLIDO
     );
+    -- Dar permisos a nivel de tablas
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_VENTAS};
 EOSQL
 
-# 5. Inventory DB tables
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_latam" <<-EOSQL
-    CREATE TABLE clave_digital (
-        id_clave SERIAL PRIMARY KEY,
-        id_juego VARCHAR(50) NOT NULL,
-        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
-        estado VARCHAR(20) NOT NULL, 
-        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
-        id_orden_compra VARCHAR(50) DEFAULT NULL
-    );
-    -- Insertar 2 códigos de prueba para simular stock
-    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
-    ('splatoon-3-ext', 'LATAM-ABCD-1234', 'DISPONIBLE'),
-    ('splatoon-3-ext', 'LATAM-EFGH-5678', 'DISPONIBLE');
+# 5. Inventary tables
+crear_inventario() {
+    local DB_NAME=$1
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$DB_NAME" <<-EOSQL
+        CREATE TABLE clave_digital (
+            id_clave SERIAL PRIMARY KEY,
+            id_juego VARCHAR(50) NOT NULL,
+            codigo_serial VARCHAR(100) UNIQUE NOT NULL,
+            estado VARCHAR(20) NOT NULL, 
+            id_orden_compra VARCHAR(50) DEFAULT NULL
+        );
+        -- Dar permisos a nivel de tablas y secuencias (SERIAL)
+        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_INVENTARIO};
+        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${DB_USER_INVENTARIO};
 EOSQL
+}
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_eu" <<-EOSQL
-    CREATE TABLE clave_digital (
-        id_clave SERIAL PRIMARY KEY,
-        id_juego VARCHAR(50) NOT NULL,
-        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
-        estado VARCHAR(20) NOT NULL, 
-        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
-        id_orden_compra VARCHAR(50) DEFAULT NULL
-    );
-    -- Insertar 2 códigos de prueba para simular stock
-    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
-    ('splatoon-3-ext', 'EU-ABCA-9876', 'DISPONIBLE'),
-    ('splatoon-3-ext', 'EU-EGGH-5431', 'DISPONIBLE');
-EOSQL
-
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_us" <<-EOSQL
-    CREATE TABLE clave_digital (
-        id_clave SERIAL PRIMARY KEY,
-        id_juego VARCHAR(50) NOT NULL,
-        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
-        estado VARCHAR(20) NOT NULL, 
-        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
-        id_orden_compra VARCHAR(50) DEFAULT NULL
-    );
-    -- Insertar 2 códigos de prueba para simular stock
-    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
-    ('splatoon-3-ext', 'US-ACBH-9885', 'DISPONIBLE'),
-    ('splatoon-3-ext', 'US-EGJH-5433', 'DISPONIBLE');
-EOSQL
-
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_inv_asia" <<-EOSQL
-    CREATE TABLE clave_digital (
-        id_clave SERIAL PRIMARY KEY,
-        id_juego VARCHAR(50) NOT NULL,
-        codigo_serial VARCHAR(100) UNIQUE NOT NULL,
-        estado VARCHAR(20) NOT NULL, 
-        -- Estados: DISPONIBLE, RESERVADO, VENDIDO
-        id_orden_compra VARCHAR(50) DEFAULT NULL
-    );
-    -- Insertar 2 códigos de prueba para simular stock
-    INSERT INTO clave_digital (id_juego, codigo_serial, estado) VALUES 
-    ('splatoon-3-ext', 'ASIA-AABH-1885', 'DISPONIBLE'),
-    ('splatoon-3-ext', 'ASIA-EGKH-7433', 'DISPONIBLE');
-EOSQL
+crear_inventario "db_inv_latam"
+crear_inventario "db_inv_eu"
+crear_inventario "db_inv_us"
+crear_inventario "db_inv_asia"
 
 # 6. Profile DB tables
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQL
@@ -142,4 +127,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQ
         token_pago VARCHAR(100) NOT NULL,
         ultimos_4 VARCHAR(4) NOT NULL
     );
+    -- Dar permisos a nivel de tablas y secuencias
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_PAGOS};
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${DB_USER_PAGOS};
 EOSQL

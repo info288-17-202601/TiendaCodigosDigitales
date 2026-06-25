@@ -10,6 +10,8 @@ from argon2 import PasswordHasher # Para Codificar
 # Definicion principal del Modulo de usuarios
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+DB_USER = os.environ.get("DB_USER_USUARIOS", "user_usuarios")
+DB_PASS = os.environ.get("DB_PASS_USUARIOS", "PassUser456")
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
@@ -62,7 +64,7 @@ def getUsuario():
         # Conexiando
         conn = None
         try:
-            conn = get_connection("db_usuarios")
+            conn = get_connection("db_usuarios", DB_USER, DB_PASS)
             cursor = conn.cursor()
             query = """
                 SELECT email,usuario,usuario_id,region
@@ -115,7 +117,7 @@ def añadir_usuario():
 
     conn = None
     try:
-        conn = get_connection("db_usuarios")
+        conn = get_connection("db_usuarios", DB_USER, DB_PASS)
         cursor = conn.cursor()
         query = """
             SELECT email
@@ -173,7 +175,7 @@ def login():
 
     conn = None
     try:
-        conn = get_connection("db_usuarios")
+        conn = get_connection("db_usuarios", DB_USER, DB_PASS)
         cursor = conn.cursor()
         query = """
             SELECT contrasena,usuario,id_usuario,email,region
@@ -213,7 +215,7 @@ def meolvide():
 
     conn = None
     try:
-        conn = get_connection("db_usuarios")
+        conn = get_connection("db_usuarios", DB_USER, DB_PASS)
         cursor = conn.cursor()
         query = """
             SELECT usuario, email

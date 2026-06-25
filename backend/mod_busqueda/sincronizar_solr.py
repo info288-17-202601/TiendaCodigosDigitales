@@ -7,6 +7,10 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import pysolr
+from shared.database import get_connection, release_connection
+
+DB_USER = os.environ.get("DB_USER_CATALOGO", "user_catalogo")
+DB_PASS = os.environ.get("DB_PASS_CATALOGO", "PassCat789")
 
 print("Iniciando Bootstrapping: Sincronizando catálogo desde Postgres hacia Solr...")
 
@@ -16,12 +20,7 @@ solr = pysolr.Solr(SOLR_URL, always_commit=True)
 
 try:
     # 2. Configurar conexión a PostgreSQL
-    conn = psycopg2.connect(
-        host=os.environ.get('DB_HOST', 'db_main'),
-        database='db_catalogo',
-        user=os.environ.get('POSTGRES_USER', 'admin'),
-        password=os.environ.get('POSTGRES_PASSWORD', 'adminpassword')
-    )
+    conn = get_connection("db_catalogo", DB_USER, DB_PASS)
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     # 3. Leer los juegos
@@ -51,4 +50,4 @@ except Exception as e:
     print(f"Error fatal de sincronización: {e}")
 finally:
     if 'conn' in locals() and conn is not None:
-        conn.close()
+        release_connection("db_catalogo", conn)

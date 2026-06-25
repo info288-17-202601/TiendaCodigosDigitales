@@ -1,8 +1,12 @@
+import os
 import json
 import time
 from shared.messaging import iniciar_multiples_consumidores, publicar_evento, publicar_evento_exchange
 from mod_inventario.service import reservar_codigo_seguro, liberar_codigo_seguro
 from shared.database import get_inventory_db_name, get_connection, release_connection
+
+DB_USER = os.environ.get("DB_USER_INVENTARIO", "user_inventario")
+DB_PASS = os.environ.get("DB_PASS_INVENTARIO", "PassInv654")
 
 # ----- Callbacks -----
 
@@ -100,7 +104,7 @@ def callback_pago_inventario(ch, method, properties, body):
         db_name = get_inventory_db_name(region)
         conn = None
         try:
-            conn = get_connection(db_name)
+            conn = get_connection(db_name, DB_USER, DB_PASS)
             cur = conn.cursor()
 
             # Usamos UPDATE
@@ -164,7 +168,7 @@ def callback_pago_inventario(ch, method, properties, body):
         db_name = get_inventory_db_name(region)
         conn = None
         try:
-            conn = get_connection(db_name)
+            conn = get_connection(db_name, DB_USER, DB_PASS)
             cur = conn.cursor()
 
             # Usamos UPDATE

@@ -6,6 +6,8 @@ from shared.cache import get_carrito, set_carrito
 from mod_ventas.service import procesar_checkout
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+DB_USER = os.environ.get("DB_USER_VENTAS", "user_ventas")
+DB_PASS = os.environ.get("DB_PASS_VENTAS", "PassVentas321")
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
@@ -169,7 +171,7 @@ def consultar_estado_orden(id_orden_compra):
     db_name = "db_ventas"
 
     # Obtener conexion
-    conn = get_connection(db_name)
+    conn = get_connection(db_name, DB_USER, DB_PASS)
     try:
         cur = conn.cursor()
         query = "SELECT estado_pago FROM orden_compra WHERE id_orden_compra = %s"
@@ -200,7 +202,7 @@ def historial_compras_usuario(usuario_id):
     db_name = "db_ventas"
 
     # Obtener conexion
-    conn = get_connection(db_name)
+    conn = get_connection(db_name, DB_USER, DB_PASS)
     try:
         cur = conn.cursor()
         query = """

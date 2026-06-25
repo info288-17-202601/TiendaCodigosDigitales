@@ -1,8 +1,12 @@
 import json
 import time
+import os
 from shared.messaging import iniciar_multiples_consumidores
 from shared.database import get_connection, release_connection
 from shared.cache import get_carrito, set_carrito
+
+DB_USER = os.environ.get("DB_USER_VENTAS", "user_ventas")
+DB_PASS = os.environ.get("DB_PASS_VENTAS", "PassVentas321")
 
 # ----- Callbacks -----
 
@@ -18,7 +22,7 @@ def callback_pago_ventas(ch, method, properties, body):
         db_name = "db_ventas"
         conn = None
         try:
-            conn = get_connection(db_name)
+            conn = get_connection(db_name, DB_USER, DB_PASS)
             cur = conn.cursor()
 
             # Usamos UPDATE
@@ -57,7 +61,7 @@ def callback_pago_ventas(ch, method, properties, body):
         db_name = "db_ventas"
         conn = None
         try:
-            conn = get_connection(db_name)
+            conn = get_connection(db_name, DB_USER, DB_PASS)
             cur = conn.cursor()
 
             # Usamos UPDATE
@@ -118,7 +122,7 @@ def procesar_inventario_fallido(ch, method, properties, body):
         conn = None
         
         try:
-            conn = get_connection(db_name)
+            conn = get_connection(db_name, DB_USER, DB_PASS)
             cur = conn.cursor()
             
             # Usamos UPDATE, buscando la orden PENDIENTE

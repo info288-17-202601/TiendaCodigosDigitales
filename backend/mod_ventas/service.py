@@ -1,8 +1,12 @@
+import os
 import uuid
 import json
 from shared.cache import redis_client, get_carrito
 from shared.messaging import publicar_evento
 from shared.database import get_connection, release_connection
+
+DB_USER = os.environ.get("DB_USER_VENTAS", "user_ventas")
+DB_PASS = os.environ.get("DB_PASS_VENTAS", "PassVentas321")
 
 def procesar_checkout(usuario_id, email, metodo_pago):
     """
@@ -36,7 +40,7 @@ def procesar_checkout(usuario_id, email, metodo_pago):
         db_name = "db_ventas"
         conn = None
         try:
-            conn = get_connection(db_name)
+            conn = get_connection(db_name, DB_USER, DB_PASS)
             cur = conn.cursor()
             
             # Guardamos el total estimado en total_pagado temporalmente

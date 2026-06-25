@@ -4,6 +4,8 @@ from flask_cors import CORS
 from shared.database import get_connection, release_connection
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+DB_USER = os.environ.get("DB_USER_PAGOS", "user_pagos")
+DB_PASS = os.environ.get("DB_PASS_PAGOS", "PassPago987")
 
 # Definicion principal del Modulo de pagos
 app = Flask(__name__)
@@ -25,7 +27,7 @@ def conseguir_cartera():
     # Comienzo conexion
     conn = None
     try:
-        conn = get_connection("db_perfil")
+        conn = get_connection("db_perfil", DB_USER, DB_PASS)
         cursor = conn.cursor()
         
         query = """
@@ -78,7 +80,7 @@ def añadir_cartera():
     conn = None
 
     try:
-        conn = get_connection("db_perfil")
+        conn = get_connection("db_perfil", DB_USER, DB_PASS)
         cursor = conn.cursor()
         query = """
                 INSERT INTO perfil_pago (id_usuario,tipo_tarjeta,token_pago,ultimos_4)
@@ -121,7 +123,7 @@ def eliminar_cartera():
     id_perfil = data.get('id_perfil') 
     conn = None
     try:
-        conn = get_connection("db_perfil")
+        conn = get_connection("db_perfil", DB_USER, DB_PASS)
         cursor = conn.cursor()
         
         query = """

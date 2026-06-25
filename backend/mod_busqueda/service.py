@@ -8,10 +8,12 @@ from flask_cors import CORS
 # Importamos pysolr (la librería para comunicarnos con Solr)
 import pysolr
 # Importamos redis para la caché
-import redis
 
 import psycopg2 
 from psycopg2.extras import RealDictCursor
+
+from shared.database import get_connection
+from shared.cache import set_cache_busqueda, get_cache_busqueda
 
 
 # 1. Inicializamos la aplicación Flask
@@ -26,32 +28,10 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 SOLR_URL = 'http://solr_engine:8983/solr/catalogo'
 
 # Función auxiliar para conectarnos a la BD
-def get_db_connection():
-    return psycopg2.connect(
-        host=os.environ.get('DB_HOST', 'localhost'),
-        database='db_catalogo',
-        user=os.environ.get('POSTGRES_USER', 'admin'),
-        password=os.environ.get('POSTGRES_PASSWORD', 'adminpassword')
-    )
 
 # Creamos el "cliente" que hablará con Solr
 solr = pysolr.Solr(SOLR_URL, always_commit=True)
 
-# Configuramos la conexión a Redis para la caché
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-redis_client = redis.Redis(
-    host=REDIS_HOST,
-    port=6379,
-    db=0,
-    decode_responses=True
-)
-
-# Test de conexión a Redis al iniciar
-try:
-    redis_client.ping()
-    print(f"[✓] Redis conectado exitosamente en {REDIS_HOST}:6379")
-except Exception as e:
-    print(f"[✗] ERROR: No se pudo conectar a Redis en {REDIS_HOST}:6379 - {e}")
 
 # 3. Creamos la "Ruta" o "Endpoint" de búsqueda inteligente
 @app.route('/buscarPorTitulo', methods=['GET'])
@@ -65,7 +45,7 @@ def buscar_juegos():
         
         try:
             # Buscar en Redis (Cache Hit)
-            resultado_cache = redis_client.get(cache_key)
+            resultado_cache = get_cache_busqueda(cache_key)
             if resultado_cache:
                 print(f"[Caché] Respondiendo '{nombre_juego}' desde RAM.")
                 return jsonify(json.loads(resultado_cache)), 200
@@ -99,7 +79,7 @@ def buscar_juegos():
             "resultados": lista_juegos}
         # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
         try: # Utilizamos .setex que es como .set pero con expiración.
-            redis_client.setex(cache_key, 600, json.dumps(respuesta))
+            set_cache_busqueda(cache_key, respuesta, 600)
             print(f"[Caché] Guardando resultado de '{nombre_juego}' en caché por 10 minutos.")
         except Exception as e:
             print(f"[!] Advertencia: No se pudo guardar en Redis: {e}")
@@ -120,7 +100,7 @@ def buscar_por_plataforma():
         
         try:
             # Buscar en Redis (Cache Hit)
-            resultado_cache = redis_client.get(cache_key)
+            resultado_cache = get_cache_busqueda(cache_key)
             if resultado_cache:
                 print(f"[Caché] Respondiendo '{plataforma_buscada}' desde RAM.")
                 return jsonify(json.loads(resultado_cache)), 200
@@ -155,7 +135,7 @@ def buscar_por_plataforma():
 
         # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
         try:
-            redis_client.setex(cache_key, 600, json.dumps(respuesta))
+            set_cache_busqueda(cache_key, respuesta, 600)
             print(f"[Caché] Guardando resultado de '{plataforma_buscada}' en caché por 10 minutos.")
         except Exception as e:
             print(f"[!] Advertencia: No se pudo guardar en Redis: {e}")
@@ -175,7 +155,7 @@ def obtener_detalle_juego(id_juego):
     
     try:
         # Buscar en Redis
-        resultado_cache = redis_client.get(cache_key)
+        resultado_cache = get_cache_busqueda(cache_key)
         if resultado_cache:
             print(f"[Caché] Respondiendo detalles de '{id_juego}' desde RAM.")
             return jsonify(json.loads(resultado_cache)), 200
@@ -199,7 +179,7 @@ def obtener_detalle_juego(id_juego):
         
         # Guardamos el resultado en Redis con una expiración de 10 minutos (600 segundos)
         try:
-            redis_client.setex(cache_key, 600, json.dumps(juego))
+            set_cache_busqueda(cache_key, juego, 600)
             print(f"[Caché] Guardando detalles de '{id_juego}' en caché por 10 minutos.")
         except Exception as e:
             print(f"[!] Advertencia: No se pudo guardar en Redis: {e}")

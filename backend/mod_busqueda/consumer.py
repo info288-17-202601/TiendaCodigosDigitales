@@ -8,21 +8,13 @@ from psycopg2.extras import RealDictCursor
 # Para testear, ejecutar: docker exec -it python_search python -m mod_busqueda.consumer
 
 # Raíz del backend al path para poder importar shared
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared.messaging import iniciar_consumidor
+from shared.database import get_connection, release_connection
 
 # Configuramos la conexión a Solr
 SOLR_URL = 'http://solr_engine:8983/solr/catalogo'
 solr = pysolr.Solr(SOLR_URL, always_commit=True)
 
-
-def obtener_conexion_db():
-    return psycopg2.connect(
-        host=os.environ.get('DB_HOST', 'db_main'),
-        database='db_catalogo',
-        user=os.environ.get('POSTGRES_USER', 'admin'),
-        password=os.environ.get('POSTGRES_PASSWORD', 'adminpassword')
-    )
 
 def callback_busqueda(ch, method, properties, body):
     conn = None
@@ -41,7 +33,7 @@ def callback_busqueda(ch, method, properties, body):
             print(f" [*] Procesando agotamiento de '{id_juego}' en la región {region}...", flush=True)
             
             # ACTUALIZAR POSTGRESQL 
-            conn = obtener_conexion_db()
+            conn = get_connection("db_catalogo")
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
             # Traemos el juego actual para ver su JSON de disponibilidad
@@ -90,7 +82,7 @@ def callback_busqueda(ch, method, properties, body):
              conn.rollback() # Si algo falla, deshacemos cambios en DB
     finally:
         if conn is not None:
-            conn.close()
+            release_connection("db_catalogo", conn)
 
 def iniciar_escucha_busqueda():
     iniciar_consumidor('inventario.cambio_stock', callback_busqueda)

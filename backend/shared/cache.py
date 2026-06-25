@@ -5,6 +5,7 @@ import redis
 # ENV
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", None)
 USER_SESSION_EXPIRATION_TIME = os.environ.get("USER_SESSION_EXPIRATION_TIME", "3600")
 MAX_CACHE_POOL_CONNS = os.environ.get("MAX_CACHE_POOL_CONNS", "50")
 
@@ -15,7 +16,8 @@ try:
         host=REDIS_HOST, 
         port=REDIS_PORT, 
         decode_responses=True,
-        max_connections=int(MAX_CACHE_POOL_CONNS)
+        max_connections=int(MAX_CACHE_POOL_CONNS),
+        password=REDIS_PASSWORD
     )
     redis_client = redis.Redis(connection_pool=redis_pool)
     print("[Cache] Piscina de conexiones a Redis inicializada.")
@@ -56,4 +58,29 @@ def get_carrito(usuario_id):
         return json.loads(datos)
     return {"items": [], "total_estimado": 0, "region_compra": "LATAM"}
 
+
+# ----- Catalogo y Busqueda -----
+
+def set_cache_busqueda(clave, datos_respuesta, expiracion_segundos=600):
+    """
+    Guarda los resultados de una busqueda o los detalles de un juego en la cache.
+    Por defecto, los datos expiran en 10 minutos (600 segundos).
+    """
+    try:
+        redis_client.setex(clave, expiracion_segundos, json.dumps(datos_respuesta))
+    except Exception as e:
+        print(f"[!] Error guardando en cache la clave {clave}: {e}")
+
+def get_cache_busqueda(clave):
+    """
+    Obtiene y deserializa los resultados de busqueda desde la cache.
+    Retorna None si la clave no existe o si expiro.
+    """
+    try:
+        datos = redis_client.get(clave)
+        if datos:
+            return json.loads(datos)
+    except Exception as e:
+        print(f"[!] Error leyendo de cache la clave {clave}: {e}")
+    return None
 

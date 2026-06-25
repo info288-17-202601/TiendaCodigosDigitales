@@ -15,12 +15,13 @@ from psycopg2.extras import RealDictCursor
 from shared.database import get_connection
 from shared.cache import set_cache_busqueda, get_cache_busqueda
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 # 1. Inicializamos la aplicación Flask
 app = Flask(__name__)
 
 # Habilitamos CORS para todas las rutas
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
 # 2. Configuramos la conexión a Solr
 # "solr_engine" es el nombre que le dimos al contenedor en el docker-compose.yml

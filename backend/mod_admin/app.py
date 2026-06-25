@@ -10,7 +10,7 @@ from shared.database import get_inventory_db_name, get_connection, release_conne
 from shared.messaging import publicar_evento
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
 @app.route('/admin/agregar_stock', methods=['POST'])
 def agregar_stock():

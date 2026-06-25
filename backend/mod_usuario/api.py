@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from shared.database import get_connection, release_connection
 from shared.messaging import publicar_evento
 from psycopg2 import Error as error_db # Para sacar un Error de Psycopg2
@@ -8,7 +9,10 @@ import json
 from argon2 import PasswordHasher # Para Codificar
 # Definicion principal del Modulo de usuarios
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 redis_client = redis.Redis(

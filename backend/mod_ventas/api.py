@@ -1,13 +1,14 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from shared.database import get_connection, release_connection
 from shared.cache import get_carrito, set_carrito
 from mod_ventas.service import procesar_checkout
 
-app = Flask(__name__)
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-# Habilitamos CORS para todas las rutas
-CORS(app, resources={r"/*": {"origins": "*"}})
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
 # ----- Endpoints ------
 

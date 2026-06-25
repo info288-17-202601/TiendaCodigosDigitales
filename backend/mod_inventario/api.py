@@ -1,9 +1,12 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from shared.database import get_inventory_db_name, get_connection, release_connection
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
 # ----- Endpoints ------
 

@@ -1,8 +1,13 @@
+import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from shared.database import get_connection, release_connection
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 # Definicion principal del Modulo de pagos
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
 def main():
     app.run(host='0.0.0.0', port=5003)

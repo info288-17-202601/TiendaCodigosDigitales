@@ -37,7 +37,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_usuarios" <<-EO
         usuario VARCHAR(100) NOT NULL,
         email VARCHAR(150) UNIQUE NOT NULL,
         contrasena VARCHAR(255) NOT NULL,
-        region VARCHAR(20) NOT NULL
+        region VARCHAR(20) NOT NULL,
+        rol VARCHAR(20) NOT NULL
     );
     -- Dar permisos a nivel de tablas
     GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_USUARIOS};    
@@ -84,7 +85,7 @@ EOSQL
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_ventas" <<-EOSQL
     CREATE TABLE orden_compra (
         id_orden_compra VARCHAR(50) PRIMARY KEY,
-        id_usuario VARCHAR(50) NOT NULL,
+        id_usuario UUID NOT NULL,
         fecha_transaccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metodo_pago VARCHAR(50) NOT NULL,
         total_pagado DECIMAL(10, 2) NOT NULL,
@@ -122,7 +123,7 @@ crear_inventario "db_inv_asia"
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQL
     CREATE TABLE perfil_pago (
         id_perfil SERIAL PRIMARY KEY,
-        id_usuario VARCHAR(50) NOT NULL,
+        id_usuario UUID NOT NULL,
         tipo_tarjeta VARCHAR(50) NOT NULL,
         token_pago VARCHAR(100) NOT NULL,
         ultimos_4 VARCHAR(4) NOT NULL

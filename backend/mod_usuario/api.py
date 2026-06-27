@@ -6,6 +6,7 @@ from psycopg2 import Error as error_db # Para sacar un Error de Psycopg2
 import redis # Para la cache
 import os # Para sacar Variables de entonro
 import json
+from secrets import token_urlsafe
 from argon2 import PasswordHasher # Para Codificar
 # Definicion principal del Modulo de usuarios
 
@@ -46,73 +47,48 @@ def reconectar():
 
 # Solicitar datos de un usuario
 #
-# GET /usuario?id_usuario=algo
+# GET /usuario?token=algo
 @app.route('/usuario',methods=['GET'])
 def getUsuario():
-    id_usuario = request.args.get('id_usuario')
-    if id_usuario:
-        cache_key = f"usuario:{id_usuario}"
+    token = request.args.get('token')
+    if token:
+        cache_key = f"sesion:{token}"
         try:
             resultado = redis_client.get(cache_key)
             if resultado:
                 return jsonify({"mensaje":"usuario encontrado",
                                 "detalle":json.loads(resultado)}),200
             
+            else:
+                return jsonify({"error":"usuario no encontrado"}),401
+            
         except Exception as e:
-            print(f"No se encontro la conexion con la cache\n Detalles: {e}")
+            return jsonify({"error":"Ocurrio un error al intentar conseguir los datos","detalle":e}),402
 
-        # Conexiando
-        conn = None
-        try:
-            conn = get_connection("db_usuarios", DB_USER, DB_PASS)
-            cursor = conn.cursor()
-            query = """
-                SELECT email,usuario,usuario_id,region
-                FROM usuario
-                WHERE id_usuario = %s
-            """
-            cursor.execute(query,(id_usuario,))
-            usuario = cursor.fetchall()
-
-            if not usuario:
-                return jsonify({"error","El usuario no existe en la base de datos"}),404
-
-            redis_client.setex(cache_key,60*60*24,json.dumps(usuario))
-            return jsonify({"mensaje":"Usuario encontrado",
-                            "usuario":usuario}),200
-        except Exception as e:
-            return jsonify({"error":"Hubo un fallo al intentar ingresar los datos","detalle":str(e)}),500
-        
-        finally:
-            cursor.close()
-            if conn:
-                release_connection("db_usuarios",conn)
     return jsonify({"error":"No se ingreso nada"}),400
 # Añadir un usuario a la BD
 #
-# PUT /registrar
+# POST /registrar
 # Content-type: application/json
 # {
-#   "usuario_id": "Mamoshka-1231",
 #   "usuario" : "asdasda",
 #   "email" : "Weezer@gmail.com",
 #   "contrasena" : "para entender",
 #   "region" : "LATAM"
 # }
 # Conste que no deberia guardarse nada, solo luego del login
-@app.route('/registrar',methods=['PUT'])
+@app.route('/registrar',methods=['POST'])
 def añadir_usuario():
     data = request.get_json()
     ph = PasswordHasher()
     if not data:
         return jsonify({"error":"No se entregaron parametros"}),400
-    id_usuario = data.get('usuario_id') # Pega para ti vito :3
     usuario = data.get('usuario')
     email = data.get('email')
     contrasena = ph.hash(data.get('contrasena'))
     region = data.get('region')
 
-    if not (id_usuario and usuario and email and contrasena and region):
+    if not (usuario and email and contrasena and region):
         return jsonify({"error":"Los datos ingresados son erroneos o estan vacios"}),400
 
     conn = None
@@ -133,10 +109,10 @@ def añadir_usuario():
 
         query = """
             INSERT INTO usuario
-            (id_usuario, usuario, email, contrasena, region)
+            ( usuario, email, contrasena, region, rol)
             VALUES (%s,%s,%s,%s,%s)
         """
-        cursor.execute(query,(id_usuario,usuario,email,contrasena,region,))
+        cursor.execute(query,(usuario,email,contrasena,region,"usuario",))
         conn.commit()
         payload = {"usuario":usuario, 
                    "email":email,
@@ -178,7 +154,7 @@ def login():
         conn = get_connection("db_usuarios", DB_USER, DB_PASS)
         cursor = conn.cursor()
         query = """
-            SELECT contrasena,usuario,id_usuario,email,region
+            SELECT contrasena,usuario,email,region,rol
             FROM usuario
             WHERE email = %s
         """
@@ -191,9 +167,11 @@ def login():
         contrasena_hashed = usuario[0][0]
 
         if ph.verify(contrasena_hashed,contrasena):
-            redis_client.setex(f"usuario:{usuario:[0][3]}",60*60*24,json.dumps([usuario[0][1],usuario[0][2],
+            token = token_urlsafe(32)
+            redis_client.setex(f"sesion:{token}",60*60*24,json.dumps([usuario[0][1],usuario[0][2],
                                                                                 usuario[0][3]],usuario[0][4]))
             return jsonify({"mensaje":"Sesion iniciada",
+                            "token":token,
                             "usuario":usuario}),200
 
         else:
@@ -244,15 +222,15 @@ def meolvide():
 
 # Solicitud para salir de la sesion
 #
-# GET /logout?usuario_id=algo
+# GET /logout?token=algo
 @app.route('/logout',methods=['GET'])
 def logout():
-    usuario_id = request.args.get('usuario_id')
-    if not usuario_id :
+    token = request.args.get('token')
+    if not token :
         return jsonify({"error":"No se entregaron los datos"}),400
     
     try:
-        redis_client.delete(f"usuario:{usuario_id}")
+        redis_client.delete(f"sesion:{token}")
         return jsonify({"mensaje":"La sesion fue cerrada con exito"}),200
 
     except Exception as e:

@@ -93,7 +93,7 @@ def procesar_usuario_registrado(ch, method, properties, body):
         email = datos.get('email')
 
         if email:
-            asunto = "¡Bienvenido a la Tienda de Códigos!"
+            asunto = "¡Bienvenido a KittenZtore!"
             mensaje = f"Hola {usuario},\n\nTu cuenta ha sido creada con éxito. ¡Gracias por registrarte en nuestra plataforma!"
             cuerpo = armar_mensaje_generico(asunto, mensaje)
             print(f"[Notificaciones] Registro de usuario recibido para {usuario}. Enviando bienvenida a {email}...")

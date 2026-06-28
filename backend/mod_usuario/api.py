@@ -187,7 +187,7 @@ def meolvide():
             return jsonify({"error":"El usuario no existe en la base de datos"}),404
         
         
-        payload = {"usuario":correo[0][0],
+        payload = {"usuario":correo[0]['usuario'],
                     "email":email}
         publicar_evento("usuario.olvidado",payload)
 

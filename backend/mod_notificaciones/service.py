@@ -3,12 +3,22 @@ import smtplib
 from email.message import EmailMessage
 
 
+import socket
+
 SMTP_HOST = os.environ.get("NOTIFICATIONS_SMTP_HOST")
 SMTP_PORT = int(os.environ.get("NOTIFICATIONS_SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("NOTIFICATIONS_SMTP_USER")
 SMTP_PASS = os.environ.get("NOTIFICATIONS_SMTP_PASS")
 SMTP_FROM = os.environ.get("NOTIFICATIONS_SMTP_FROM", SMTP_USER or "no-reply@localhost")
 SMTP_USE_TLS = os.environ.get("NOTIFICATIONS_SMTP_USE_TLS", "true").lower() in {"1", "true", "yes", "si"}
+
+# Parche para error de DNS en Docker Desktop con Alpine Linux
+if SMTP_HOST == "smtp.gmail.com":
+    try:
+        socket.gethostbyname(SMTP_HOST)
+    except socket.gaierror:
+        print("[Notificaciones] Fallo el DNS de Docker. Usando IP directa de Gmail...")
+        SMTP_HOST = "172.217.192.109"
 
 
 def armar_mensaje_compra(id_orden_compra, juego_id, codigos_entregados):
@@ -23,7 +33,7 @@ def armar_mensaje_compra(id_orden_compra, juego_id, codigos_entregados):
 
 
 def armar_mensaje_generico(asunto, mensaje_cuerpo):
-    return f"{mensaje_cuerpo}\n\nGracias por usar nuestro servicio."
+    return f"{mensaje_cuerpo}\n\nGracias por usar KittenZtore."
 
 def enviar_notificacion(email, asunto, cuerpo):
     if not SMTP_HOST:

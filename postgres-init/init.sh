@@ -87,6 +87,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_ventas" <<-EOSQ
     CREATE TABLE orden_compra (
         id_orden_compra VARCHAR(50) PRIMARY KEY,
         id_usuario UUID NOT NULL,
+        detalles_carrito JSONB NOT NULL,
         fecha_transaccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metodo_pago VARCHAR(50) NOT NULL,
         total_pagado DECIMAL(10, 2) NOT NULL,

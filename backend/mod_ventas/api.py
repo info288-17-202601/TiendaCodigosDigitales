@@ -42,7 +42,7 @@ def obtener_carrito():
         return jsonify({"error": "No existe sesion valida con el token dado"}), 401
     
     # si existe obtenemos el carrito y lo devolvemos
-    usuario_id = sesion_usuario['usuario_id']
+    usuario_id = sesion_usuario['id_usuario']
     
     carrito = get_carrito(usuario_id)
     return jsonify(carrito), 200
@@ -329,7 +329,7 @@ def historial_compras_usuario():
     try:
         cur = conn.cursor()
         query = """
-            SELECT id_orden_compra, fecha_transaccion, metodo_pago, total_pagado, estado_pago 
+            SELECT id_orden_compra, fecha_transaccion, metodo_pago, total_pagado, estado_pago, detalles_carrito 
             FROM orden_compra 
             WHERE id_usuario = %s 
             ORDER BY fecha_transaccion DESC
@@ -338,10 +338,21 @@ def historial_compras_usuario():
         
         ordenes = cur.fetchall()
         cur.close()
+
+        historial_formateado = []
+        for orden in ordenes:
+            historial_formateado.append({
+                "id_orden_compra": orden[0],
+                "fecha_transaccion": orden[1].isoformat() if orden[1] else None,
+                "metodo_pago": orden[2],
+                "total_pagado": float(orden[3]),
+                "estado_pago": orden[4],
+                "detalles_carrito": orden[5] 
+            })
         
         # Dar respuesta
         return jsonify({
-            "historial": ordenes
+            "historial": historial_formateado
         }), 200
         
     # Liberar conexion

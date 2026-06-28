@@ -31,6 +31,14 @@ def procesar_checkout(usuario_id, email, metodo_pago):
         if not items_carrito:
             print(f"[Ventas] Checkout rechazado. El carrito no tiene items.")
             return False
+        
+        # Filtramos para eliminar id y precio del carrito 
+        detalles_limpios = [
+            {"titulo": item.get("titulo"), "cantidad": item.get("cantidad")} 
+            for item in items_carrito
+        ]
+
+        detalles_jsonb = json.dumps(detalles_limpios)
 
         # Generar un identificador unico para esta transaccion
         id_orden_compra = f"ORD-{str(uuid.uuid4())[:8].upper()}"
@@ -45,8 +53,8 @@ def procesar_checkout(usuario_id, email, metodo_pago):
             
             # Guardamos el total estimado en total_pagado temporalmente
             query_insert = """
-                INSERT INTO orden_compra (id_orden_compra, id_usuario, metodo_pago, total_pagado, estado_pago) 
-                VALUES (%s, %s, %s, %s, 'PENDIENTE');
+                INSERT INTO orden_compra (id_orden_compra, id_usuario, detalles_carrito, metodo_pago, total_pagado, estado_pago) 
+                VALUES (%s, %s, %s, %s, %s, 'PENDIENTE');
             """
             cur.execute(query_insert, (id_orden_compra, usuario_id, metodo_pago, monto_a_cobrar))
             conn.commit()

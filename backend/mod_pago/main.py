@@ -64,7 +64,7 @@ def conseguir_cartera():
 #     "tipo_tarjeta": "VISA",
 #     "ultimos_4": "1234"
 # }
-@app.route('/cartera',methods=['PUT'])
+@app.route('/cartera',methods=['POST'])
 def añadir_cartera():
     data = request.get_json()
     if not data:

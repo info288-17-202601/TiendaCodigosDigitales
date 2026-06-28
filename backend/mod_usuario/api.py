@@ -128,7 +128,7 @@ def login():
         conn = get_connection("db_usuarios", DB_USER, DB_PASS)
         cursor = conn.cursor()
         query = """
-            SELECT contrasena,usuario,email,region,rol
+            SELECT contrasena,usuario,email,region,rol,id_usuario
             FROM usuario
             WHERE email = %s
         """
@@ -143,12 +143,13 @@ def login():
         if ph.verify(contrasena_hashed,contrasena):
             token = token_urlsafe(32)
             cache_sesion = {
+                "id_usuario" : usuario[5],
                 "usuario" : usuario[1],
                 "correo" : usuario[2],
                 "region": usuario[3],
                 "rol": usuario[4]
             }
-            set_sesion(token,cache_sesion,60*60*24)
+            set_sesion(token,cache_sesion)
             return jsonify({"mensaje":"Sesion iniciada",
                             "token":token,
                             "usuario":cache_sesion}),200

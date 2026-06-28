@@ -2,6 +2,7 @@ import os
 import json
 import pika
 import time
+from .security import _envolver_mensaje, envolver_callback
 
 # ENV
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
@@ -39,16 +40,19 @@ def publicar_evento(cola, payload):
 
         # Abrir un canal de comunicacion
         canal = conexion.channel()
-        
+    
         # durable=True asegura que la cola
         # sobreviva reinicios del broker
         canal.queue_declare(queue=cola, durable=True)
         
+        # Envolver y firmar
+        mensaje = _envolver_mensaje(cola,payload)
+
         # Publicar mensaje en la cola
         canal.basic_publish(
             exchange='',
             routing_key=cola,
-            body=json.dumps(payload),
+            body=json.dumps(mensaje),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # delivery_mode=2 hace que el mensaje sea persistente en disco
             )
@@ -85,7 +89,7 @@ def iniciar_consumidor(cola, callback):
         
         # auto_ack=False requiere confirmacion manual
         # del mensaje procesado
-        canal.basic_consume(queue=cola, on_message_callback=callback, auto_ack=False)
+        canal.basic_consume(queue=cola, on_message_callback=envolver_callback(callback), auto_ack=False)
 
         print(f"Consumidor iniciado. Escuchando la cola '{cola}'...")
         canal.start_consuming()
@@ -100,10 +104,13 @@ def publicar_evento_exchange(routing_key, payload):
         conexion = get_rabbitmq_connection()
         canal = conexion.channel()
         canal.exchange_declare(exchange='tienda_exchange', exchange_type='direct', durable=True)
+        
+        mensaje = _envolver_mensaje(routing_key,payload)
+        
         canal.basic_publish(
             exchange='tienda_exchange',
             routing_key=routing_key,
-            body=json.dumps(payload),
+            body=json.dumps(mensaje),
             properties=pika.BasicProperties(delivery_mode=2)
         )
         conexion.close()
@@ -118,7 +125,7 @@ def iniciar_consumidor_exchange(nombre_cola, routing_key, callback):
         canal.queue_declare(queue=nombre_cola, durable=True)
         canal.queue_bind(exchange='tienda_exchange', queue=nombre_cola, routing_key=routing_key)
         canal.basic_qos(prefetch_count=1)
-        canal.basic_consume(queue=nombre_cola, on_message_callback=callback, auto_ack=False)
+        canal.basic_consume(queue=nombre_cola, on_message_callback=envolver_callback(callback), auto_ack=False)
         canal.start_consuming()
     except Exception as e:
         print(f"Error: {e}")
@@ -157,7 +164,7 @@ def iniciar_multiples_consumidores(configuraciones):
                 print(f"[*] Registrado oyente en cola directa '{nombre_cola}'")
 
             # Le decimos al canal que empiece a escuchar este buzon
-            canal.basic_consume(queue=nombre_cola, on_message_callback=cb, auto_ack=False)
+            canal.basic_consume(queue=nombre_cola, on_message_callback=envolver_callback(cb), auto_ack=False)
             
         print("[*] Worker iniciado y bloqueado. Escuchando multiples colas...")
         

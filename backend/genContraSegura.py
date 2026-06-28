@@ -22,8 +22,9 @@ def generar_password_clasica(longitud=16):
 
 def main():
     numClaves = input("Ingrese la cantidad de claves a generar: ")
+    largo = input("Ingrese la longitud de las claves a generar (entre 64 a 128 caracteres): ")
     for i in range(int(numClaves)):
-        print(generar_password_clasica(25) + "\n") 
+        print(generar_password_clasica(int(largo)) + "\n") 
         # Ejemplo de salida:  qT!8x#mP2$kL9v@z
 
 

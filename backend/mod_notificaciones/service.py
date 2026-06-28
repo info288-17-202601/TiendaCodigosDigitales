@@ -29,11 +29,12 @@ def armar_mensaje_compra(id_orden_compra, juego_id, codigos_entregados):
         f"Juego: {juego_id or 'No especificado'}\n"
         f"Codigos entregados:\n{codigos_formateados}\n\n"
         f"Gracias por tu compra."
+        f"\n\n\n\n Aviso de seguridad: KittenZtore nunca te pedirá información personal, contraseñas, datos bancarios ni códigos a través de correo electrónico. Si recibes un mensaje que solicita estos datos, ignóralo y revisa siempre la comunicación en nuestra web oficial."
     )
 
 
 def armar_mensaje_generico(asunto, mensaje_cuerpo):
-    return f"{mensaje_cuerpo}\n\nGracias por usar KittenZtore."
+    return f"{mensaje_cuerpo}\n\nGracias por usar KittenZtore.\n\n\n\n Aviso de seguridad: KittenZtore nunca te pedirá información personal, contraseñas, datos bancarios ni códigos a través de correo electrónico. Si recibes un mensaje que solicita estos datos, ignóralo y revisa siempre la comunicación en nuestra web oficial."
 
 def enviar_notificacion(email, asunto, cuerpo):
     if not SMTP_HOST:

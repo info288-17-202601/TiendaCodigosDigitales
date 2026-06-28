@@ -41,7 +41,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_usuarios" <<-EO
         rol VARCHAR(20) NOT NULL
     );
     -- Dar permisos a nivel de tablas
-    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_USUARIOS};    
+    GRANT SELECT, INSERT, UPDATE ON usuario TO ${DB_USER_USUARIOS};
 EOSQL
 
 # 3. Catalog DB tables
@@ -78,7 +78,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
     ('elden-ring-ps5', 'Elden Ring', 'PlayStation 5', 44990.00, '{"LATAM": true, "US": true, "EU": true}'::jsonb);
 
     -- Dar permisos a nivel de tablas
-    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_CATALOGO};
+    GRANT SELECT, UPDATE ON catalogo TO ${DB_USER_CATALOGO};
+    GRANT INSERT ON catalogo TO ${DB_USER_ADMIN};
 EOSQL
 
 # 4. Sales DB tables
@@ -94,7 +95,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_ventas" <<-EOSQ
         -- Estados: PENDIENTE, PAGADO, COMPENSADO, FALLIDO
     );
     -- Dar permisos a nivel de tablas
-    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_VENTAS};
+    GRANT SELECT, INSERT, UPDATE, DELETE ON orden_compra TO ${DB_USER_VENTAS};
 EOSQL
 
 # 5. Inventary tables
@@ -109,8 +110,8 @@ crear_inventario() {
             id_orden_compra VARCHAR(50) DEFAULT NULL
         );
         -- Dar permisos a nivel de tablas y secuencias (SERIAL)
-        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_INVENTARIO};
-        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${DB_USER_INVENTARIO};
+    GRANT SELECT, INSERT, UPDATE, DELETE ON clave_digital TO ${DB_USER_INVENTARIO};
+    GRANT USAGE, SELECT ON SEQUENCE clave_digital_id_clave_seq TO ${DB_USER_INVENTARIO};
 EOSQL
 }
 
@@ -129,6 +130,6 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_perfil" <<-EOSQ
         ultimos_4 VARCHAR(4) NOT NULL
     );
     -- Dar permisos a nivel de tablas y secuencias
-    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER_PAGOS};
-    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${DB_USER_PAGOS};
+    GRANT SELECT, INSERT, DELETE ON perfil_pago TO ${DB_USER_PAGOS};
+    GRANT USAGE, SELECT ON SEQUENCE perfil_pago_id_perfil_seq TO ${DB_USER_PAGOS};
 EOSQL

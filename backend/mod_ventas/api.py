@@ -24,14 +24,18 @@ def obtener_carrito():
     # En un caso real, vendría del header o JWT
     #usuario_id = "user-123"
 
-    data = request.get_json()
+    # Obtener el header Authorization
+    token_sesion = request.headers.get("Authorization")
 
     # Validacion manual de que traiga todos los datos
-    campos_requeridos = ["token_sesion"]
-    if not data or not all(campo in data for campo in campos_requeridos):
-        return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
     
-    sesion_usuario = get_sesion(data['token_sesion'])
+    # Si se usa bearer como formato
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
+    
+    sesion_usuario = get_sesion(token_sesion)
     
     # Si no existe el registro
     if sesion_usuario == None:
@@ -49,14 +53,24 @@ def agregar_al_carrito():
     """
     Agrega un juego al carrito temporal del usuario utilizando el manejador de cache.
     """
+    # Verficar que traiga token valido
+    token_sesion = request.headers.get("Authorization")
+
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
+
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
+
+
     data = request.get_json()
     
     # Validacion manual de que traiga todos los datos
-    campos_requeridos = ["token_sesion", "juego_id", "cantidad", "precio_unitario", "titulo"]
+    campos_requeridos = ["juego_id", "cantidad", "precio_unitario", "titulo"]
     if not data or not all(campo in data for campo in campos_requeridos):
         return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
     
-    sesion_usuario = get_sesion(data['token_sesion'])
+    sesion_usuario = get_sesion(token_sesion)
     
     # Si no existe el registro
     if sesion_usuario == None:
@@ -88,7 +102,6 @@ def agregar_al_carrito():
     # Dar respuesta
     return jsonify({
         "mensaje": "Producto añadido al carrito exitosamente", 
-        "token_sesion": data['token'],
         "total_estimado": carrito_actual["total_estimado"]
     }), 200
 
@@ -98,14 +111,24 @@ def iniciar_checkout():
     """
     Inicia el proceso de compra llamando a service.py.
     """
+    # Verficar que traiga token valido
+    token_sesion = request.headers.get("Authorization")
+
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
+
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
+
+
     data = request.get_json()
     
     # Validacion manual de que traiga el usuario
-    campos_requeridos = ["token_sesion", "email","metodo_pago"]
+    campos_requeridos = ["email","metodo_pago"]
     if not data or not all(campo in data for campo in campos_requeridos):
         return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
 
-    sesion_usuario = get_sesion(data['token_sesion'])
+    sesion_usuario = get_sesion(token_sesion)
     
     # Si no existe el registro
     if sesion_usuario == None:
@@ -136,13 +159,16 @@ def quitar_del_carrito(juego_id):
     del carrito temporal del usuario y recalcula el total.
     """
 
-    data = request.get_json()
-    # Validacion manual de que traiga todos los datos
-    campos_requeridos = ["token_sesion"]
-    if not data or not all(campo in data for campo in campos_requeridos):
-        return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
+    # Verficar que traiga token valido
+    token_sesion = request.headers.get("Authorization")
+
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
+
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
     
-    sesion_usuario = get_sesion(data["token_sesion"])
+    sesion_usuario = get_sesion(token_sesion)
 
     # Si no existe el registro
     if sesion_usuario is None:
@@ -187,18 +213,22 @@ def quitar_del_carrito(juego_id):
 
 # Vaciar todo el carrito de un usuario
 @app.route("/api/ventas/carrito", methods=["DELETE"])
-def vaciar_carrito(usuario_id):
+def vaciar_carrito():
     """
     Limpia por completo el carrito de compras de un usuario.
     """
 
-    data = request.get_json()
-    # Validacion manual de que traiga todos los datos
-    campos_requeridos = ["token_sesion"]
-    if not data or not all(campo in data for campo in campos_requeridos):
-        return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
+    # Verficar que traiga token valido
+    token_sesion = request.headers.get("Authorization")
+
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
+
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
+
     
-    sesion_usuario = get_sesion(data["token_sesion"])
+    sesion_usuario = get_sesion(token_sesion)
 
     # Si no existe el registro
     if sesion_usuario is None:
@@ -218,7 +248,6 @@ def vaciar_carrito(usuario_id):
     # Dar respuesta
     return jsonify({
         "mensaje": "El carrito ha sido vaciado exitosamente",
-        "token_sesion": data['token_sesion'],
         "total_estimado": 0.0
     }), 200
 
@@ -229,13 +258,16 @@ def consultar_estado_orden(id_orden_compra):
     Endpoint para Polling del estado de la orden por parte del frontend.
     """
 
-    data = request.get_json()
-    # Validacion manual de que traiga todos los datos
-    campos_requeridos = ["token_sesion"]
-    if not data or not all(campo in data for campo in campos_requeridos):
-        return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
+    # Verficar que traiga token valido
+    token_sesion = request.headers.get("Authorization")
+
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
+
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
     
-    sesion_usuario = get_sesion(data["token_sesion"])
+    sesion_usuario = get_sesion(token_sesion)
 
     # Si no existe el registro
     if sesion_usuario is None:
@@ -273,13 +305,16 @@ def historial_compras_usuario():
     Devuelve el historial inmutable de compras para un usuario.
     """
 
-    data = request.get_json()
-    # Validacion manual de que traiga todos los datos
-    campos_requeridos = ["token_sesion"]
-    if not data or not all(campo in data for campo in campos_requeridos):
-        return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
+    # Verficar que traiga token valido
+    token_sesion = request.headers.get("Authorization")
+
+    if not token_sesion:
+        return jsonify({"error": "Falta el header Authorization"}), 400
+
+    if token_sesion.startswith("Bearer "):
+        token_sesion = token_sesion[7:]
     
-    sesion_usuario = get_sesion(data["token_sesion"])
+    sesion_usuario = get_sesion(token_sesion)
 
     # Si no existe el registro
     if sesion_usuario is None:
@@ -306,7 +341,6 @@ def historial_compras_usuario():
         
         # Dar respuesta
         return jsonify({
-            "token_sesion": data['token_sesion'], 
             "historial": ordenes
         }), 200
         

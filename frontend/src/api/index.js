@@ -117,6 +117,27 @@ export const api = {
     }
   },
 
+  getOrdenes: async () => {
+    try {
+        const res = await fetch(`${API_URL}/ventas/ordenes`, {
+        headers: {
+            ...authHeaders()
+        }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+        throw new Error(data?.error || 'Error al obtener el historial de compras');
+        }
+
+        return data;
+    } catch (e) {
+        console.error(e);
+        return { historial: [] };
+    }
+  },
+
   // ---------------------------------------
 
   checkout: async (payload) => {

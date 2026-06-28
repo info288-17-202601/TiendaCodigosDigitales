@@ -12,18 +12,16 @@ export const CartProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // 🔐 Obtener token de sesión
-  const getToken = () => localStorage.getItem('token_sesion');
-
   useEffect(() => {
     const loadCart = async () => {
       try {
-        const token_sesion = getToken();
-        const data = await api.getCart(token_sesion);
+        const data = await api.getCart();
 
-        if (data) setCart(data);
+        if (data) {
+          setCart(data);
+        }
       } catch (error) {
-        console.error("Error cargando carrito:", error);
+        console.error('Error cargando carrito:', error);
       } finally {
         setLoading(false);
       }
@@ -33,60 +31,122 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const addToCart = async (game) => {
-    const token_sesion = getToken();
+    try {
+      const newItems = [...cart.items];
 
-    const newItems = [...cart.items];
+      const juegoId = game.id_juego || game.id;
 
-    const juegoId = game.id_juego || game.id;
-    const titulo = Array.isArray(game.titulo) ? game.titulo[0] : game.titulo;
-    const precioBase = Array.isArray(game.precio_base)
-      ? game.precio_base[0]
-      : game.precio_base;
+      const titulo = Array.isArray(game.titulo)
+        ? game.titulo[0]
+        : game.titulo;
 
-    const precio = precioBase ?? game.precio ?? game.precio_unitario ?? 0;
+      const precioBase = Array.isArray(game.precio_base)
+        ? game.precio_base[0]
+        : game.precio_base;
 
-    const existingIndex = newItems.findIndex(i => i.juego_id === juegoId);
+      const precio =
+        precioBase ??
+        game.precio ??
+        game.precio_unitario ??
+        0;
 
-    if (existingIndex >= 0) {
-      newItems[existingIndex].cantidad += 1;
-    } else {
-      newItems.push({
-        juego_id: juegoId,
-        titulo,
-        precio,
-        cantidad: 1
+      const existingIndex = newItems.findIndex(
+        item => item.juego_id === juegoId
+      );
+
+      let cantidadFinal = 1;
+
+      if (existingIndex >= 0) {
+        newItems[existingIndex].cantidad += 1;
+        cantidadFinal = newItems[existingIndex].cantidad;
+      } else {
+        newItems.push({
+          juego_id: juegoId,
+          titulo,
+          precio,
+          cantidad: 1
+        });
+      }
+
+      const total = newItems.reduce(
+        (acc, item) => acc + item.precio * item.cantidad,
+        0
+      );
+
+      setCart({
+        ...cart,
+        items: newItems,
+        total_estimado: total
       });
+
+      await api.updateCart({
+        juego_id: juegoId,
+        cantidad: cantidadFinal,
+        precio_unitario: precio,
+        titulo
+      });
+
+    } catch (error) {
+      console.error('Error agregando al carrito:', error);
     }
+  };
 
-    const total = newItems.reduce(
-      (acc, item) => acc + item.precio * item.cantidad,
-      0
-    );
+  const updateQuantity = async (juego_id, delta) => {
+    try {
+      const itemActual = cart.items.find(
+        item => item.juego_id === juego_id
+      );
 
-    const newCart = {
-      ...cart,
-      items: newItems,
-      total_estimado: total
-    };
+      if (!itemActual) return;
 
-    setCart(newCart);
+      const nuevaCantidad = Math.max(
+        1,
+        itemActual.cantidad + delta
+      );
 
-    await api.updateCart({
-      token_sesion,
-      juego_id: juegoId,
-      cantidad: 1,
-      precio_unitario: precio,
-      titulo
-    });
+      const newItems = cart.items.map(item =>
+        item.juego_id === juego_id
+          ? { ...item, cantidad: nuevaCantidad }
+          : item
+      );
+
+      const total = newItems.reduce(
+        (acc, item) => acc + item.precio * item.cantidad,
+        0
+      );
+
+      setCart({
+        ...cart,
+        items: newItems,
+        total_estimado: total
+      });
+
+      await api.updateCart({
+        juego_id,
+        cantidad: nuevaCantidad,
+        precio_unitario: itemActual.precio,
+        titulo: itemActual.titulo
+      });
+
+    } catch (error) {
+      console.error('Error actualizando cantidad:', error);
+    }
+  };
+
+  const updateRegion = (region) => {
+    setCart(prev => ({
+      ...prev,
+      region_compra: region
+    }));
   };
 
   const removeFromCart = async (juego_id) => {
     try {
-      const token_sesion = getToken();
+      await api.removeFromCart(juego_id);
 
-      await api.removeFromCart(token_sesion, juego_id);
-
-      const newItems = cart.items.filter(i => i.juego_id !== juego_id);
+      const newItems = cart.items.filter(
+        item => item.juego_id !== juego_id
+      );
 
       const total = newItems.reduce(
         (acc, item) => acc + item.precio * item.cantidad,
@@ -99,15 +159,13 @@ export const CartProvider = ({ children }) => {
         total_estimado: total
       });
     } catch (error) {
-      console.error("Error al eliminar el item:", error);
+      console.error('Error al eliminar item:', error);
     }
   };
 
   const clearCart = async () => {
     try {
-      const token_sesion = getToken();
-
-      await api.clearCart(token_sesion);
+      await api.clearCart();
 
       setCart({
         items: [],
@@ -115,13 +173,21 @@ export const CartProvider = ({ children }) => {
         region_compra: 'LATAM'
       });
     } catch (error) {
-      console.error("Error al vaciar el carrito:", error);
+      console.error('Error al vaciar carrito:', error);
     }
   };
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, clearCart, loading }}
+      value={{
+        cart,
+        addToCart,
+        updateQuantity,
+        updateRegion,
+        removeFromCart,
+        clearCart,
+        loading
+      }}
     >
       {children}
     </CartContext.Provider>

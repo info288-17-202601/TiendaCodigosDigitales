@@ -89,12 +89,26 @@ def agregar_al_carrito():
     # Obtener el carrito actual
     carrito_actual = get_carrito(usuario_id)
     
-    # Añadir el nuevo itema la lista de items
-    carrito_actual["items"].append(nuevo_item)
-    
-    # Actualizar el total estimado en el diccionario
-    subtotal_item = nuevo_item["precio"] * nuevo_item["cantidad"]
-    carrito_actual["total_estimado"] += subtotal_item
+    # Buscar si el juego ya existe
+    encontrado = False
+
+    for item in carrito_actual["items"]:
+        if item["juego_id"] == nuevo_item["juego_id"]:
+            item["cantidad"] = nuevo_item["cantidad"]
+            item["precio"] = nuevo_item["precio"]
+            item["titulo"] = nuevo_item["titulo"]
+            encontrado = True
+            break
+
+    # Si no existe, agregarlo
+    if not encontrado:
+        carrito_actual["items"].append(nuevo_item)
+
+    # Recalcular total completo
+    carrito_actual["total_estimado"] = sum(
+        item["precio"] * item["cantidad"]
+        for item in carrito_actual["items"]
+    )
     
     # Guardar en Redis
     set_carrito(usuario_id, carrito_actual)

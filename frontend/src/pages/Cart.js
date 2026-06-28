@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
 const Cart = ({ onNavigate }) => {
-  const { cart, removeFromCart, clearCart, loading } = useCart();
+  const { cart, removeFromCart, clearCart, loading, updateQuantity, updateRegion } = useCart();
   const { user } = useAuth();
 
   const [checkoutStatus, setCheckoutStatus] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [ordenes, setOrdenes] = useState([]);
 
   const confirmClearCart = async () => {
     await clearCart();
+    const data = await api.getOrdenes();
+    setOrdenes(data.historial || []);
     setShowConfirmModal(false);
   };
 
@@ -79,6 +82,15 @@ const Cart = ({ onNavigate }) => {
       setIsProcessing(false);
     }
   };
+
+  useEffect(() => {
+    const cargarOrdenes = async () => {
+      const data = await api.getOrdenes();
+      setOrdenes(data.historial || []);
+    };
+
+    cargarOrdenes();
+  }, []);
 
   if (loading) {
     return <div style={styles.center}>Cargando carrito...</div>;
@@ -159,10 +171,30 @@ const Cart = ({ onNavigate }) => {
                 className="glass-card"
                 style={styles.cartItem}
               >
-                <div style={styles.itemInfo}>
-                  <h3>{item.titulo}</h3>
-                  <p>Cantidad: {item.cantidad}</p>
-                </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginTop: '0.5rem'
+                }}
+              >
+                <button
+                  className="btn-secondary"
+                  onClick={() => updateQuantity(item.juego_id, -1)}
+                >
+                  -
+                </button>
+
+                <span>{item.cantidad}</span>
+
+                <button
+                  className="btn-secondary"
+                  onClick={() => updateQuantity(item.juego_id, 1)}
+                >
+                  +
+                </button>
+              </div>
 
                 <div style={styles.itemActions}>
                   <div style={styles.price}>
@@ -190,7 +222,23 @@ const Cart = ({ onNavigate }) => {
 
             <div style={styles.summaryRow}>
               <span>Región</span>
-              <span>{cart.region_compra}</span>
+
+              <select
+                value={cart.region_compra}
+                onChange={(e) => updateRegion(e.target.value)}
+                style={{
+                  background: 'var(--surface)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: '6px',
+                  padding: '0.3rem'
+                }}
+              >
+                <option value="LATAM">LATAM</option>
+                <option value="NA">NA</option>
+                <option value="EU">EU</option>
+                <option value="ASIA">ASIA</option>
+              </select>
             </div>
 
             <hr style={styles.divider} />
@@ -226,6 +274,55 @@ const Cart = ({ onNavigate }) => {
           </div>
         </div>
       )}
+    
+      {ordenes.map((orden) => (
+        <div
+          key={orden.id_orden_compra}
+          style={{
+            borderBottom: '1px solid var(--glass-border)',
+            padding: '15px'
+          }}
+        >
+          <h3>Orden #{orden.id_orden_compra}</h3>
+
+          <p>
+            <strong>Fecha:</strong>{' '}
+            {new Date(orden.fecha_transaccion).toLocaleString('es-CL')}
+          </p>
+
+          <p>
+            <strong>Método de pago:</strong>{' '}
+            {orden.metodo_pago}
+          </p>
+
+          <p>
+            <strong>Estado:</strong>{' '}
+            {orden.estado_pago}
+          </p>
+
+          <p>
+            <strong>Total:</strong>{' '}
+            ${Number(orden.total_pagado).toLocaleString('es-CL')}
+          </p>
+
+          <div style={{ marginTop: '1rem' }}>
+            <strong>Productos:</strong>
+
+            {orden.detalles_carrito?.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  marginTop: '0.5rem',
+                  paddingLeft: '1rem',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                • {item.titulo} × {item.cantidad}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

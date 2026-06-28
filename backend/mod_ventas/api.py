@@ -76,8 +76,8 @@ def agregar_al_carrito():
     if sesion_usuario == None:
         return jsonify({"error": "No existe sesion valida con el token dado"}), 401
 
-    usuario_id = sesion_usuario['usuario_id']
-    
+    usuario_id = sesion_usuario.get('id_usuario')
+
     # Preparar el nuevo item
     nuevo_item = {
         "juego_id": data['juego_id'],
@@ -134,7 +134,7 @@ def iniciar_checkout():
     if sesion_usuario == None:
         return jsonify({"error": "No existe sesion valida con el token dado"}), 401
 
-    usuario_id = sesion_usuario['usuario_id']
+    usuario_id = sesion_usuario.get('id_usuario')
 
     # Utilizar servicio del modulo de ventas
     id_orden = procesar_checkout(usuario_id, data['email'], data['metodo_pago'])
@@ -174,7 +174,7 @@ def quitar_del_carrito(juego_id):
     if sesion_usuario is None:
         return jsonify({"error": "No existe sesion valida con el token dado"}), 401
 
-    usuario_id = sesion_usuario["usuario_id"]
+    usuario_id = sesion_usuario.get("id_usuario")
 
     # Obtener el carrito actual
     carrito_actual = get_carrito(usuario_id)
@@ -234,7 +234,7 @@ def vaciar_carrito():
     if sesion_usuario is None:
         return jsonify({"error": "No existe sesion valida con el token dado"}), 401
 
-    usuario_id = sesion_usuario["usuario_id"]
+    usuario_id = sesion_usuario.get("id_usuario")
 
     carrito_actual = get_carrito(usuario_id)
     
@@ -320,7 +320,7 @@ def historial_compras_usuario():
     if sesion_usuario is None:
         return jsonify({"error": "No existe sesion valida con el token dado"}), 401
 
-    usuario_id = sesion_usuario["usuario_id"]
+    usuario_id = sesion_usuario.get('id_usuario')
 
     db_name = "db_ventas"
 

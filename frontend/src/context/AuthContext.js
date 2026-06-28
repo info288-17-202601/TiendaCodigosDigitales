@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     email: usuarioData.correo,
     region: usuarioData.region,
     rol: usuarioData.rol,
-    token,                      // token Redis — necesario para logout y carrito
+  token_sesion: token,  // token Redis — necesario para logout y carrito
   });
 
   const login = async (email, contrasena) => {

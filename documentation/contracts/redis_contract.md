@@ -7,12 +7,10 @@ session:\<token>
 
 ### Value
 {
-"usuario_id": "9988-7766",
 "usuario": "SquidKid_Chile",
-"region": "LATAM",
 "correo": "correo.ejemplo@gmail.com",
-"moneda": "CLP",
-"ultimo_acceso": "2026-03-31T20:40:00Z"
+"region": "LATAM",
+"rol": "usuario"
 }
 
 ## Carrito

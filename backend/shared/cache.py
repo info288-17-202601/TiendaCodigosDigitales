@@ -41,6 +41,9 @@ def get_sesion(token):
         return json.loads(datos)
     return None
 
+def delete_sesion(token):
+    redis_client.delete(f"session:{token}")
+
 
 # ----- Carrito -----
 

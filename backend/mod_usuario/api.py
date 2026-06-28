@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from shared.database import get_connection, release_connection
 from shared.messaging import publicar_evento
+from shared.cache import set_sesion,get_sesion,delete_sesion
 from psycopg2 import Error as error_db # Para sacar un Error de Psycopg2
-import redis # Para la cache
 import os # Para sacar Variables de entonro
 import json
 from secrets import token_urlsafe
@@ -17,33 +17,8 @@ DB_PASS = os.environ.get("DB_PASS_USUARIOS", "PassUser456")
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-redis_client = redis.Redis(
-        host=REDIS_HOST,
-        port=6379,
-        db=0,
-        decode_responses=True
-    )
-
-def connect_redis():
-    redis_client = redis.Redis(
-        host=REDIS_HOST,
-        port=6379,
-        db=0,
-        decode_responses=True
-    )
-
-    try:
-        redis_client.ping()
-    except Exception as e:
-        print(f"Error al intentar realizar la conexion\n Detalles: {e}")
-
 def main():
     app.run(host='0.0.0.0', port=5006)
-
-@app.route('/cache_reconect',methods=['GET'])
-def reconectar():
-    connect_redis()
 
 # Solicitar datos de un usuario
 #
@@ -52,9 +27,8 @@ def reconectar():
 def getUsuario():
     token = request.args.get('token')
     if token:
-        cache_key = f"sesion:{token}"
         try:
-            resultado = redis_client.get(cache_key)
+            resultado = get_sesion(token)
             if resultado:
                 return jsonify({"mensaje":"usuario encontrado",
                                 "detalle":json.loads(resultado)}),200
@@ -159,20 +133,25 @@ def login():
             WHERE email = %s
         """
         cursor.execute(query,(email,))
-        usuario = cursor.fetchall()
+        usuario = cursor.fetchone()
 
         if not usuario:
             return jsonify({"error":"El usuario no existe en la base de datos"}),404
 
-        contrasena_hashed = usuario[0][0]
+        contrasena_hashed = usuario[0]
 
         if ph.verify(contrasena_hashed,contrasena):
             token = token_urlsafe(32)
-            redis_client.setex(f"sesion:{token}",60*60*24,json.dumps([usuario[0][1],usuario[0][2],
-                                                                                usuario[0][3]],usuario[0][4]))
+            cache_sesion = {
+                "usuario" : usuario[1],
+                "correo" : usuario[2],
+                "region": usuario[3],
+                "rol": usuario[4]
+            }
+            set_sesion(token,cache_sesion,60*60*24)
             return jsonify({"mensaje":"Sesion iniciada",
                             "token":token,
-                            "usuario":usuario}),200
+                            "usuario":cache_sesion}),200
 
         else:
             return jsonify({"error":"Email o contrasena incorrecta"}),401
@@ -230,7 +209,7 @@ def logout():
         return jsonify({"error":"No se entregaron los datos"}),400
     
     try:
-        redis_client.delete(f"sesion:{token}")
+        delete_sesion(token)
         return jsonify({"mensaje":"La sesion fue cerrada con exito"}),200
 
     except Exception as e:

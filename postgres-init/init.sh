@@ -12,12 +12,13 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE DATABASE db_inv_us;
     CREATE DATABASE db_inv_asia;
 
-    -- Crear Usuarios Aislados (Las contraseñas vendrán del .env)
+-- Crear Usuarios Aislados (Las contraseñas vendrán del .env)
     CREATE USER ${DB_USER_USUARIOS} WITH PASSWORD '${DB_PASS_USUARIOS}';
     CREATE USER ${DB_USER_CATALOGO} WITH PASSWORD '${DB_PASS_CATALOGO}';
     CREATE USER ${DB_USER_VENTAS} WITH PASSWORD '${DB_PASS_VENTAS}';
     CREATE USER ${DB_USER_INVENTARIO} WITH PASSWORD '${DB_PASS_INVENTARIO}';
     CREATE USER ${DB_USER_PAGOS} WITH PASSWORD '${DB_PASS_PAGOS}';
+    CREATE USER ${DB_USER_ADMIN} WITH PASSWORD '${DB_PASS_ADMIN}';
 
     -- Asignar dueños de las Bases de Datos
     GRANT ALL PRIVILEGES ON DATABASE db_usuarios TO ${DB_USER_USUARIOS};
@@ -79,7 +80,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "db_catalogo" <<-EO
 
     -- Dar permisos a nivel de tablas
     GRANT SELECT, UPDATE ON catalogo TO ${DB_USER_CATALOGO};
-    GRANT INSERT ON catalogo TO ${DB_USER_ADMIN};
+    GRANT INSERT ON catalogo TO ${DB_USER_INVENTARIO};
 EOSQL
 
 # 4. Sales DB tables

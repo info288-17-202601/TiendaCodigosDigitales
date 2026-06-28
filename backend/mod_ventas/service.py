@@ -56,7 +56,7 @@ def procesar_checkout(usuario_id, email, metodo_pago):
                 INSERT INTO orden_compra (id_orden_compra, id_usuario, detalles_carrito, metodo_pago, total_pagado, estado_pago) 
                 VALUES (%s, %s, %s, %s, %s, 'PENDIENTE');
             """
-            cur.execute(query_insert, (id_orden_compra, usuario_id, metodo_pago, monto_a_cobrar))
+            cur.execute(query_insert, (id_orden_compra, usuario_id, detalles_jsonb,metodo_pago, monto_a_cobrar))
             conn.commit()
             cur.close()
             print(f"[Ventas] BD: Orden {id_orden_compra} registrada como PENDIENTE.")

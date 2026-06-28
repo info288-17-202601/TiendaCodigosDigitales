@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
 const Cart = ({ onNavigate }) => {
-  const { cart, removeFromCart, clearCart, loading, updateQuantity, updateRegion } = useCart();
+  const { cart, removeFromCart, clearCart, loading, updateRegion, updateQuantity } = useCart();
   const { user } = useAuth();
 
   const [checkoutStatus, setCheckoutStatus] = useState(null);
@@ -14,8 +14,6 @@ const Cart = ({ onNavigate }) => {
 
   const confirmClearCart = async () => {
     await clearCart();
-    const data = await api.getOrdenes();
-    setOrdenes(data.historial || []);
     setShowConfirmModal(false);
   };
 
@@ -85,8 +83,13 @@ const Cart = ({ onNavigate }) => {
 
   useEffect(() => {
     const cargarOrdenes = async () => {
-      const data = await api.getOrdenes();
-      setOrdenes(data.historial || []);
+      try {
+        const data = await api.getOrdenes();
+        setOrdenes(data.historial || []);
+        console.log('ORDENES:', data);
+      } catch (error) {
+        console.error("Error al cargar órdenes:", error);
+      }
     };
 
     cargarOrdenes();
@@ -171,30 +174,24 @@ const Cart = ({ onNavigate }) => {
                 className="glass-card"
                 style={styles.cartItem}
               >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  marginTop: '0.5rem'
-                }}
-              >
-                <button
-                  className="btn-secondary"
-                  onClick={() => updateQuantity(item.juego_id, -1)}
-                >
-                  -
-                </button>
-
-                <span>{item.cantidad}</span>
-
-                <button
-                  className="btn-secondary"
-                  onClick={() => updateQuantity(item.juego_id, 1)}
-                >
-                  +
-                </button>
-              </div>
+                <div style={styles.itemInfo}>
+                  <h3>{item.titulo}</h3>
+                  <div style={styles.quantityControls}>
+                    <button 
+                      onClick={() => updateQuantity(item.juego_id, -1)}
+                      style={styles.qtyBtn}
+                    >
+                      -
+                    </button>
+                    <span style={styles.qtyValue}>{item.cantidad}</span>
+                    <button 
+                      onClick={() => updateQuantity(item.juego_id, 1)}
+                      style={styles.qtyBtn}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
 
                 <div style={styles.itemActions}>
                   <div style={styles.price}>
@@ -221,23 +218,16 @@ const Cart = ({ onNavigate }) => {
             </div>
 
             <div style={styles.summaryRow}>
-              <span>Región</span>
-
-              <select
-                value={cart.region_compra}
+              <span>Región de compra</span>
+              <select 
+                value={cart.region_compra || 'LATAM'} 
                 onChange={(e) => updateRegion(e.target.value)}
-                style={{
-                  background: 'var(--surface)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '6px',
-                  padding: '0.3rem'
-                }}
+                style={styles.regionSelect}
               >
                 <option value="LATAM">LATAM</option>
-                <option value="NA">NA</option>
-                <option value="EU">EU</option>
-                <option value="ASIA">ASIA</option>
+                <option value="NA">North America</option>
+                <option value="EU">Europe</option>
+                <option value="ASIA">Asia</option>
               </select>
             </div>
 
@@ -275,55 +265,57 @@ const Cart = ({ onNavigate }) => {
         </div>
       )}
     
-      {ordenes.map((orden) => (
-        <div
-          key={orden.id_orden_compra}
-          style={{
-            borderBottom: '1px solid var(--glass-border)',
-            padding: '15px'
-          }}
-        >
-          <h3>Orden #{orden.id_orden_compra}</h3>
+    <h2 style={{marginTop: '2rem'}}>Historial de compras</h2>
 
-          <p>
-            <strong>Fecha:</strong>{' '}
-            {new Date(orden.fecha_transaccion).toLocaleString('es-CL')}
-          </p>
+    <div className="glass-card" style={{ marginTop: '1rem', padding: '1.5rem' }}>
+      {ordenes.length === 0 ? (
+        <p style={{ textAlign: 'center', paddingTop: '1rem' }}>No tienes compras registradas.</p>
+      ) : (
+        ordenes.map((orden) => (
+          <div
+            key={orden.id_orden_compra}
+            style={{
+              borderBottom: '1px solid var(--glass-border)',
+              padding: '15px'
+            }}
+          >
+            <h3>Orden #{orden.id_orden_compra}</h3>
 
-          <p>
-            <strong>Método de pago:</strong>{' '}
-            {orden.metodo_pago}
-          </p>
+            <p>
+              <strong>Título del juego: </strong>
+              {orden.detalles_carrito.map(detalle => detalle.titulo).join(', ')}
+            </p>
 
-          <p>
-            <strong>Estado:</strong>{' '}
-            {orden.estado_pago}
-          </p>
+            <p>
+              <strong>Cantidad: </strong>
+              {orden.detalles_carrito.reduce((total, detalle) => total + detalle.cantidad, 0)}
+            </p>
 
-          <p>
-            <strong>Total:</strong>{' '}
-            ${Number(orden.total_pagado).toLocaleString('es-CL')}
-          </p>
+            <p>
+              <strong>Fecha:</strong>{' '}
+              {new Date(orden.fecha_transaccion).toLocaleString('es-CL')}
+            </p>
 
-          <div style={{ marginTop: '1rem' }}>
-            <strong>Productos:</strong>
+            <p>
+              <strong>Método de pago:</strong>{' '}
+              {orden.metodo_pago}
+            </p>
 
-            {orden.detalles_carrito?.map((item, idx) => (
-              <div
-                key={idx}
-                style={{
-                  marginTop: '0.5rem',
-                  paddingLeft: '1rem',
-                  color: 'var(--text-secondary)'
-                }}
-              >
-                • {item.titulo} × {item.cantidad}
-              </div>
-            ))}
+            <p>
+              <strong>Total:</strong>{' '}
+              ${Number(orden.total_pagado).toLocaleString('es-CL')}
+            </p>
+
+            <p>
+              <strong>Estado:</strong>{' '}
+              {orden.estado_pago}
+            </p>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
+    </div>
+    
   );
 };
 
@@ -387,6 +379,32 @@ const styles = {
     flexDirection: 'column',
     gap: '0.5rem'
   },
+  quantityControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    marginTop: '0.5rem'
+  },
+  qtyBtn: {
+    background: 'rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--glass-border)',
+    color: 'var(--text-primary)',
+    width: '30px',
+    height: '30px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s'
+  },
+  qtyValue: {
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    minWidth: '20px',
+    textAlign: 'center'
+  },
   itemActions: {
     display: 'flex',
     alignItems: 'center',
@@ -409,7 +427,16 @@ const styles = {
   summaryRow: {
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center',
     color: 'var(--text-secondary)'
+  },
+  regionSelect: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid var(--glass-border)',
+    color: 'var(--text-primary)',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    cursor: 'pointer'
   },
   divider: {
     border: 'none',
@@ -449,15 +476,6 @@ const styles = {
     fontSize: '0.9rem',
     transition: 'all 0.3s'
   },
-
-  headerRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1rem'
-  },
-
-  // 4. ESTILOS PARA EL MODAL
   modalOverlay: {
     position: 'fixed',
     top: 0,

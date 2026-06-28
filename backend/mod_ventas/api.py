@@ -356,12 +356,12 @@ def historial_compras_usuario():
         historial_formateado = []
         for orden in ordenes:
             historial_formateado.append({
-                "id_orden_compra": orden[0],
-                "fecha_transaccion": orden[1].isoformat() if orden[1] else None,
-                "metodo_pago": orden[2],
-                "total_pagado": float(orden[3]),
-                "estado_pago": orden[4],
-                "detalles_carrito": orden[5] 
+                "id_orden_compra": orden["id_orden_compra"],
+                "fecha_transaccion": orden["fecha_transaccion"].isoformat() if orden["fecha_transaccion"] else None,
+                "metodo_pago": orden["metodo_pago"],
+                "total_pagado": float(orden["total_pagado"]),
+                "estado_pago": orden["estado_pago"],
+                "detalles_carrito": orden["detalles_carrito"]
             })
         
         # Dar respuesta

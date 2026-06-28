@@ -2,10 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 
 const Home = ({ onNavigate }) => {
+  const [rawGames, setRawGames] = useState([]);
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('*:*');
   const [searchInput, setSearchInput] = useState('');
+  const [searchRegion, setSearchRegion] = useState('LATAM');
+
+  const regions = [
+    { id: 'US', label: '🇺🇸 US' },
+    { id: 'LATAM', label: '🌎 LATAM' },
+    { id: 'EU', label: '🇪🇺 EU' },
+    { id: 'ASIA', label: 'ASIA' },
+    { id: 'Global', label: '🌐 GLOBAL' }
+  ];
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -13,18 +23,53 @@ const Home = ({ onNavigate }) => {
       const data = await api.searchGames(query);
       const gamesResult = data.resultados || [];
 
-      const gamesWithStock = await Promise.all(
-        gamesResult.map(async (game) => {
-          const stockData = await api.getStock(game.id, 'LATAM');
-          return { ...game, stock: stockData?.stock_disponible || 0 };
-        })
-      );
-
-      setGames(gamesWithStock);
+      setRawGames(gamesResult);
       setLoading(false);
     };
     fetchGames();
   }, [query]);
+
+  useEffect(() => {
+    // Mapear el stock según la región seleccionada
+    const mappedGames = rawGames.map(game => {
+      let disp = {};
+      let isArrayFormat = false;
+      try {
+        if (game.disponibilidad_regional && game.disponibilidad_regional.length > 0) {
+          if (game.disponibilidad_regional.length >= 3 && typeof game.disponibilidad_regional[0] === 'boolean') {
+            isArrayFormat = true;
+          } else if (game.disponibilidad_regional.length >= 3 && (game.disponibilidad_regional[0] === 'true' || game.disponibilidad_regional[0] === 'false')) {
+            isArrayFormat = true;
+          } else {
+            const val = game.disponibilidad_regional[0];
+            disp = typeof val === 'string' ? JSON.parse(val) : val;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      const checkStock = (region) => {
+        if (isArrayFormat) {
+          const idx = { 'EU': 0, 'US': 1, 'LATAM': 2 }[region];
+          const val = game.disponibilidad_regional[idx];
+          return val === true || val === 'true';
+        }
+        return disp && disp[region] === true;
+      };
+
+      let hasStock = false;
+      if (searchRegion === 'Global') {
+        hasStock = checkStock('EU') && checkStock('US') && checkStock('LATAM');
+      } else {
+        hasStock = checkStock(searchRegion);
+      }
+
+      return { ...game, stock: hasStock };
+    });
+
+    setGames(mappedGames);
+  }, [rawGames, searchRegion]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -48,6 +93,19 @@ const Home = ({ onNavigate }) => {
           />
           <button type="submit" className="btn-primary">Buscar</button>
         </form>
+
+        <div style={styles.regionFilters}>
+          {regions.map(r => (
+            <button
+              key={r.id}
+              onClick={() => setSearchRegion(r.id)}
+              className={searchRegion === r.id ? 'btn-primary' : 'btn-secondary'}
+              style={styles.regionBtn}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={styles.grid}>
@@ -57,8 +115,6 @@ const Home = ({ onNavigate }) => {
           <div style={styles.loading}>No se encontraron juegos.</div>
         ) : (
           games.map(game => {
-            const isAvailable = !game.region_bloqueo || game.region_bloqueo === 'LATAM' || game.region_bloqueo === 'Global';
-
             return (
               <div key={game.id} className="glass-card" style={styles.card} onClick={() => onNavigate('detail', game.id)}>
                 <img
@@ -78,12 +134,7 @@ const Home = ({ onNavigate }) => {
                 <div style={styles.cardContent}>
                   <h3>{game.titulo}</h3>
                   <p style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</p>
-                  <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{game.stock ? '' : 'Agotado'}</p>
-                  {!isAvailable && (
-                    <p style={{ color: 'var(--danger)', fontWeight: 'bold', margin: 0, marginTop: '0.5rem' }}>
-                      No disponible en tu país
-                    </p>
-                  )}
+                  <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{game.stock ? '' : 'Agotado :('}</p>
                 </div>
               </div>
             );
@@ -116,6 +167,17 @@ const styles = {
     color: 'white',
     fontSize: '1rem',
     outline: 'none',
+  },
+  regionFilters: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '1rem',
+    marginTop: '1.5rem',
+    flexWrap: 'wrap'
+  },
+  regionBtn: {
+    padding: '0.5rem 1rem',
+    fontSize: '0.95rem'
   },
   grid: {
     display: 'grid',

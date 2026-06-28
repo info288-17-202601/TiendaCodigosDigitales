@@ -103,7 +103,7 @@ def iniciar_checkout():
     # Validacion manual de que traiga el usuario
     campos_requeridos = ["token_sesion", "email","metodo_pago"]
     if not data or not all(campo in data for campo in campos_requeridos):
-        return jsonify({"error": "Faltan campos obligatorios en el JSON"}), 400
+        return jsonify({"error": "Faltan campos obligatorios en el JSON", "datos recibidos": data}), 400
 
     sesion_usuario = get_sesion(data['token_sesion'])
     

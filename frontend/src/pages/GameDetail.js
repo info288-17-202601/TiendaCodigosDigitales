@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../api';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const GameDetail = ({ gameId, onNavigate }) => {
   const [game, setGame] = useState(null);
@@ -8,22 +9,35 @@ const GameDetail = ({ gameId, onNavigate }) => {
   const [showNoStockModal, setShowNoStockModal] = useState(false);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const { addToCart, cart } = useCart();
+  const { user, setShowLoginModal } = useAuth();
+  const [selectedRegion, setSelectedRegion] = useState('LATAM');
+
+  const regions = [
+    { id: 'US', label: '🇺🇸 US' },
+    { id: 'LATAM', label: '🌎 LATAM' },
+    { id: 'EU', label: '🇪🇺 EU' },
+    { id: 'Global', label: '🌐 GLOBAL' },
+    { id: 'ASIA', label: 'ASIA' }
+  ];
+
+
 
   useEffect(() => {
     const fetchGame = async () => {
+      setLoading(true);
       const data = await api.getGameDetails(gameId);
       if (data) {
-        const stockData = await api.getStock(gameId, 'LATAM');
+        const stockData = await api.getStock(gameId, selectedRegion);
         data.stock = stockData?.stock_disponible || 0;
       }
       setGame(data);
       setLoading(false);
     };
     fetchGame();
-  }, [gameId]);
+  }, [gameId, selectedRegion]);
 
-  if (loading) return <div style={styles.center}>Loading details...</div>;
-  if (!game) return <div style={styles.center}>Game not found.</div>;
+  if (loading) return <div style={styles.center}>Cargando detalles...</div>;
+  if (!game) return <div style={styles.center}>No se encontró el juego.</div>;
 
   return (
     <div className="animate-fade-in" style={styles.container}>
@@ -77,7 +91,40 @@ const GameDetail = ({ gameId, onNavigate }) => {
       </button>
 
       {(() => {
-        const isAvailable = !game.region_bloqueo || game.region_bloqueo === 'LATAM' || game.region_bloqueo === 'Global';
+        let disp = {};
+        let isArrayFormat = false;
+        try {
+          if (game.disponibilidad_regional && game.disponibilidad_regional.length > 0) {
+            if (game.disponibilidad_regional.length >= 3 && typeof game.disponibilidad_regional[0] === 'boolean') {
+              isArrayFormat = true;
+            } else if (game.disponibilidad_regional.length >= 3 && (game.disponibilidad_regional[0] === 'true' || game.disponibilidad_regional[0] === 'false')) {
+              isArrayFormat = true;
+            } else {
+              const val = game.disponibilidad_regional[0];
+              disp = typeof val === 'string' ? JSON.parse(val) : val;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+
+        const checkStock = (region) => {
+          if (isArrayFormat) {
+            const idx = { 'EU': 0, 'US': 1, 'LATAM': 2 }[region];
+            const val = game.disponibilidad_regional[idx];
+            return val;
+          }
+          return disp && disp[region] === true;
+        };
+
+        let hasStock = false;
+        if (selectedRegion === 'Global') {
+          hasStock = checkStock('EU') && checkStock('US') && checkStock('LATAM');
+        } else {
+          hasStock = checkStock(selectedRegion);
+        }
+
+        const isAvailable = hasStock;
         return (
 
           <div className="glass-card" style={styles.content}>
@@ -99,19 +146,26 @@ const GameDetail = ({ gameId, onNavigate }) => {
             <div style={styles.info}>
               <h1>{game.titulo}</h1>
               <div style={styles.tags}>
-                <span style={styles.tag}>{game.plataforma || 'Unknown Platform'}</span>
-                <span style={styles.tag}>{game.region_bloqueo || 'Global'}</span>
+                <span style={styles.tag}>{game.plataforma || 'Otros'}</span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <p style={{ width: '100%', margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Selecciona tu región:</p>
+                {regions.map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => setSelectedRegion(r.id)}
+                    className={selectedRegion === r.id ? 'btn-primary' : 'btn-secondary'}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.9rem' }}
+                  >
+                    {r.label}
+                  </button>
+                ))}
               </div>
 
               <p style={{ fontSize: '1.2rem', color: 'var(--text-primary)', margin: '0.5rem 0' }}>
                 Stock disponible: <strong>{game.stock}</strong>
               </p>
-
-              {!isAvailable && (
-                <p style={{ color: 'var(--danger)', fontWeight: 'bold', fontSize: '1.2rem', margin: '0' }}>
-                  No disponible en tu país
-                </p>
-              )}
 
               <div style={styles.actionArea}>
                 <div style={styles.price}>${game.precio_base?.toLocaleString('es-CL') || 0}</div>
@@ -123,6 +177,12 @@ const GameDetail = ({ gameId, onNavigate }) => {
                     const cartItems = (cart && Array.isArray(cart.items)) ? cart.items : [];
                     const existing = cartItems.find(i => i.juego_id === juegoId);
                     const cantidadEnCarrito = existing ? existing.cantidad : 0;
+
+                    // Check if user is logged in
+                    if (!user) {
+                      setShowLoginModal(true);
+                      return;
+                    }
 
                     // If no stock or the cart already contains the same (or more) quantity than available, show modal
                     if (game.stock === 0 || cantidadEnCarrito >= game.stock) {

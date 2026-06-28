@@ -1,8 +1,10 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = ({ onNavigate, currentView }) => {
   const { cart } = useCart();
+  const { user, logout, setShowLoginModal } = useAuth();
 
   const totalItems = cart.items.reduce((acc, item) => acc + item.cantidad, 0);
 
@@ -36,8 +38,28 @@ const Navbar = ({ onNavigate, currentView }) => {
               <img src="/cart.svg" alt="Carrito" style={styles.cartIcon} />
               <span>Carrito ({totalItems})</span>
             </div>
-
           </button>
+
+          {user ? (
+            <div style={styles.userSection}>
+              <span style={styles.userText}>Hola, {user.nombre}</span>
+              <button 
+                className="btn-secondary" 
+                onClick={() => logout()}
+                style={styles.logoutBtn}
+              >
+                Salir
+              </button>
+            </div>
+          ) : (
+            <button 
+              className="btn-primary"
+              onClick={() => setShowLoginModal(true)}
+              style={styles.loginBtn}
+            >
+              Iniciar Sesión
+            </button>
+          )}
         </div>
       </div>
     </nav>
@@ -95,6 +117,25 @@ const styles = {
   cartBadge: {
     fontWeight: 'bold',
     color: 'var(--success)', // O el color que prefieras para resaltar el número
+  },
+  userSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginLeft: '1rem',
+    paddingLeft: '1rem',
+    borderLeft: '1px solid var(--glass-border)'
+  },
+  userText: {
+    color: 'var(--text-primary)',
+    fontWeight: '500'
+  },
+  logoutBtn: {
+    padding: '0.4rem 0.8rem',
+    fontSize: '0.9rem'
+  },
+  loginBtn: {
+    marginLeft: '1rem'
   }
 
 };

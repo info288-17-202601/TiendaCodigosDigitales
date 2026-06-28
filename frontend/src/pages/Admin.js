@@ -90,6 +90,7 @@ const Admin = () => {
               <option value="US">US</option>
               <option value="EU">EU</option>
               <option value="Global">Global</option>
+              <option value="ASIA">ASIA</option>
             </select>
           </div>
 

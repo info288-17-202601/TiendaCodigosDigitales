@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-const correoPrueba = "felipe.henriquez969@gmail.com";
 
 const Cart = ({ onNavigate }) => {
   const { cart, removeFromCart, clearCart, loading } = useCart();
+  const { user } = useAuth();
+
   const [checkoutStatus, setCheckoutStatus] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-
-  const handleClearCart = async () => {
-    if (window.confirm('¿Estás seguro de que deseas vaciar todo el carrito?')) {
-      await clearCart();
-    }
-  };
 
   const confirmClearCart = async () => {
     await clearCart();
@@ -21,40 +17,72 @@ const Cart = ({ onNavigate }) => {
   };
 
   const handleCheckout = async () => {
+    if (!user?.token_sesion) {
+      setCheckoutStatus({
+        success: false,
+        error: 'Debes iniciar sesión para comprar'
+      });
+      return;
+    }
+
     setIsProcessing(true);
+
     try {
-      // Antes de invocar al backend, verificamos stock para cada item desde el frontend
+      // 1. Validar stock
       for (const item of cart.items) {
         try {
-          const stockData = await api.getStock(item.juego_id, cart.region_compra || 'LATAM');
+          const stockData = await api.getStock(
+            item.juego_id,
+            cart.region_compra || 'LATAM'
+          );
+
           const disponible = stockData?.stock_disponible ?? 0;
+
           if (disponible < item.cantidad) {
-            setCheckoutStatus({ success: false, error: `No queda stock suficiente de "${item.titulo}" (solicitado: ${item.cantidad}, disponible: ${disponible})` });
+            setCheckoutStatus({
+              success: false,
+              error: `No queda stock suficiente de "${item.titulo}" (solicitado: ${item.cantidad}, disponible: ${disponible})`
+            });
             setIsProcessing(false);
             return;
           }
         } catch (e) {
-          setCheckoutStatus({ success: false, error: 'No se pudo verificar el stock. Intenta de nuevo.' });
+          setCheckoutStatus({
+            success: false,
+            error: `Error al verificar stock de "${item.titulo}": ${e.message}`
+          });
           setIsProcessing(false);
           return;
         }
       }
 
+      // 2. Checkout con token real
       const result = await api.checkout({
-        usuario_id: 'user-123',
-        email: correoPrueba,
+        token_sesion: user.token_sesion,
+        email: user.email,
         metodo_pago: 'tarjeta'
       });
-      setCheckoutStatus({ success: true, orderId: result.id_orden_compra });
+
+      setCheckoutStatus({
+        success: true,
+        orderId: result.id_orden_compra
+      });
+
       await clearCart();
+
     } catch (e) {
-      setCheckoutStatus({ success: false, error: e.message });
+      setCheckoutStatus({
+        success: false,
+        error: e.message
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (loading) return <div style={styles.center}>Cargando carrito...</div>;
+  if (loading) {
+    return <div style={styles.center}>Cargando carrito...</div>;
+  }
 
   if (checkoutStatus?.success) {
     return (
@@ -62,9 +90,16 @@ const Cart = ({ onNavigate }) => {
         <div className="glass-card" style={styles.successCard}>
           <div style={styles.successIcon}>✓</div>
           <h2>¡Procesando pago!</h2>
-          <p>Tu ID de orden es: <strong>{checkoutStatus.orderId}</strong></p>
-          <p>Recibirás un correo electrónico una vez que se entreguen las claves.</p>
-          <button className="btn-primary" onClick={() => onNavigate('home')} style={{ marginTop: '2rem' }}>
+          <p>
+            Tu ID de orden es: <strong>{checkoutStatus.orderId}</strong>
+          </p>
+          <p>Recibirás un correo con las claves.</p>
+
+          <button
+            className="btn-primary"
+            onClick={() => onNavigate('home')}
+            style={{ marginTop: '2rem' }}
+          >
             Seguir Comprando
           </button>
         </div>
@@ -79,7 +114,8 @@ const Cart = ({ onNavigate }) => {
           <div className="glass-card animate-fade-in" style={styles.modalContent}>
             <div style={styles.modalIcon}>⚠️</div>
             <h3>¿Vaciar carrito?</h3>
-            <p>Esta acción eliminará todos los productos que has seleccionado.</p>
+            <p>Esta acción eliminará todos los productos.</p>
+
             <div style={styles.modalActions}>
               <button
                 className="btn-secondary"
@@ -88,6 +124,7 @@ const Cart = ({ onNavigate }) => {
               >
                 Cancelar
               </button>
+
               <button
                 className="btn-danger"
                 onClick={confirmClearCart}
@@ -105,7 +142,11 @@ const Cart = ({ onNavigate }) => {
       {cart.items.length === 0 ? (
         <div className="glass-card" style={styles.emptyCart}>
           <p>Tu carrito está vacío.</p>
-          <button className="btn-primary" onClick={() => onNavigate('home')} style={{ marginTop: '1rem' }}>
+          <button
+            className="btn-primary"
+            onClick={() => onNavigate('home')}
+            style={{ marginTop: '1rem' }}
+          >
             Explorar Catálogo
           </button>
         </div>
@@ -113,14 +154,25 @@ const Cart = ({ onNavigate }) => {
         <div style={styles.cartLayout}>
           <div style={styles.itemsList}>
             {cart.items.map(item => (
-              <div key={item.juego_id} className="glass-card" style={styles.cartItem}>
+              <div
+                key={item.juego_id}
+                className="glass-card"
+                style={styles.cartItem}
+              >
                 <div style={styles.itemInfo}>
                   <h3>{item.titulo}</h3>
                   <p>Cantidad: {item.cantidad}</p>
                 </div>
+
                 <div style={styles.itemActions}>
-                  <div style={styles.price}>${(item.precio * item.cantidad).toLocaleString('es-CL')}</div>
-                  <button className="btn-danger" onClick={() => removeFromCart(item.juego_id)}>
+                  <div style={styles.price}>
+                    ${(item.precio * item.cantidad).toLocaleString('es-CL')}
+                  </div>
+
+                  <button
+                    className="btn-danger"
+                    onClick={() => removeFromCart(item.juego_id)}
+                  >
                     Eliminar
                   </button>
                 </div>
@@ -130,22 +182,28 @@ const Cart = ({ onNavigate }) => {
 
           <div className="glass-card" style={styles.summary}>
             <h3>Resumen del pedido</h3>
+
             <div style={styles.summaryRow}>
               <span>Subtotal</span>
               <span>${cart.total_estimado.toLocaleString('es-CL')}</span>
             </div>
+
             <div style={styles.summaryRow}>
-              <span>Region</span>
+              <span>Región</span>
               <span>{cart.region_compra}</span>
             </div>
+
             <hr style={styles.divider} />
+
             <div style={styles.summaryTotal}>
               <span>Total</span>
               <span>${cart.total_estimado.toLocaleString('es-CL')}</span>
             </div>
 
             {checkoutStatus?.error && (
-              <div style={styles.errorBox}>{checkoutStatus.error}</div>
+              <div style={styles.errorBox}>
+                {checkoutStatus.error}
+              </div>
             )}
 
             <button
@@ -156,6 +214,7 @@ const Cart = ({ onNavigate }) => {
             >
               {isProcessing ? 'Procesando...' : 'Proceder al Pago'}
             </button>
+
             <button
               className="btn-danger-outline"
               style={styles.clearBtn}
@@ -338,17 +397,6 @@ const styles = {
   modalBtn: {
     flex: 1,
     padding: '0.75rem'
-  },
-  clearBtn: {
-    width: '100%',
-    padding: '0.75rem',
-    marginTop: '0.5rem',
-    background: 'transparent',
-    border: '1px solid #ff4d4d',
-    color: '#ff4d4d',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.3s'
   }
 };
 

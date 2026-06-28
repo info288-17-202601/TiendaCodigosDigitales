@@ -1,3 +1,4 @@
+import traceback
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from shared.database import get_connection, release_connection
@@ -114,7 +115,7 @@ def añadir_usuario():
 #   "email" : "Weezer@gmail.com",
 #   "contrasena" : "para entender"
 # }
-@app.route('/login',methods=['GET'])
+@app.route('/login',methods=['POST'])
 def login():
     data = request.get_json()
     ph = PasswordHasher()
@@ -124,6 +125,7 @@ def login():
     contrasena = data.get('contrasena')
 
     conn = None
+    cursor = None
     try:
         conn = get_connection("db_usuarios", DB_USER, DB_PASS)
         cursor = conn.cursor()
@@ -134,20 +136,23 @@ def login():
         """
         cursor.execute(query,(email,))
         usuario = cursor.fetchone()
-
+        print(usuario)
+        print(type(usuario)) # BORRAR DPS
+        
         if not usuario:
             return jsonify({"error":"El usuario no existe en la base de datos"}),404
 
-        contrasena_hashed = usuario[0]
+        contrasena_hashed = usuario["contrasena"]
 
         if ph.verify(contrasena_hashed,contrasena):
             token = token_urlsafe(32)
+
             cache_sesion = {
-                "id_usuario" : usuario[5],
-                "usuario" : usuario[1],
-                "correo" : usuario[2],
-                "region": usuario[3],
-                "rol": usuario[4]
+                "id_usuario": usuario["id_usuario"],
+                "usuario": usuario["usuario"],
+                "correo": usuario["email"],
+                "region": usuario["region"],
+                "rol": usuario["rol"]
             }
             set_sesion(token,cache_sesion)
             return jsonify({"mensaje":"Sesion iniciada",
@@ -157,7 +162,11 @@ def login():
         else:
             return jsonify({"error":"Email o contrasena incorrecta"}),401
     except Exception as e:
-        return jsonify({"error":"Hubo un fallo al intentar buscar los datos","detalle":str(e)}),500
+        traceback.print_exc()
+        return jsonify({
+            "error": type(e).__name__,
+            "detalle": str(e)
+        }), 500
     
     finally:
         cursor.close()

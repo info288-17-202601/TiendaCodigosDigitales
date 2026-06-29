@@ -6,3 +6,4 @@ redis
 pysolr
 aiohttp
 argon2-cffi
+cryptography

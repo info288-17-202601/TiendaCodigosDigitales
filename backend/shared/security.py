@@ -2,8 +2,17 @@ import hashlib
 import hmac
 import json
 import os
+from cryptography.fernet import Fernet
 
 MESSAGE_SIGNING_SECRET = os.getenv("MESSAGE_SIGNING_SECRET", "IMightSeemCrazyWhatIAmBoutToSay")
+MESSAGE_ENCRYPTION_KEY = os.getenv("MESSAGE_ENCRYPTION_KEY")
+
+def _get_fernet():
+    if not MESSAGE_ENCRYPTION_KEY:
+        return None
+    return Fernet(MESSAGE_ENCRYPTION_KEY.encode())
+
+
 
 def _canonical_json(data):
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -29,10 +38,19 @@ def _firmar_mensaje(event_name, payload):
     }
 
 def _envolver_mensaje(event_name, payload):
-    firma = _firmar_mensaje(event_name, payload)
+    f = _get_fernet()
+    if f:
+        payload_cifrado = f.encrypt(json.dumps(payload).encode()).decode()
+        payload_final = {"cifrado": True, "datos": payload_cifrado}
+        print(f"[Crypto] Payload cifrado: {payload_cifrado[:50]}...")
+    else:
+        payload_final = payload
+
+    firma = _firmar_mensaje(event_name, payload_final)  # firmar el payload_final, no el original
+
     mensaje = {
         "event": event_name,
-        "payload": payload
+        "payload": payload_final
     }
     if firma:
         mensaje["signed_hash"] = firma
@@ -41,19 +59,37 @@ def _envolver_mensaje(event_name, payload):
 def _verificar_y_desempaquetar(body):
     data = json.loads(body)
     if "payload" not in data:
-        return data
+        return body
 
     if "signed_hash" not in data:
-        return data["payload"]
+        payload = data["payload"]
+        if isinstance(payload, dict) and payload.get("cifrado"):
+            f = _get_fernet()
+            if f:
+                payload = json.loads(f.decrypt(payload["datos"].encode()))
+                print(f"[Crypto] Mensaje descifrado: {payload}")
+        return json.dumps(payload).encode('utf-8')
 
     expected = _firmar_mensaje(data.get("event"), data.get("payload"))
     if expected is None:
-        return data["payload"]
+        payload = data["payload"]
+        if isinstance(payload, dict) and payload.get("cifrado"):
+            f = _get_fernet()
+            if f:
+                payload = json.loads(f.decrypt(payload["datos"].encode()))
+                print(f"[Crypto] Mensaje descifrado: {payload}")
+        return json.dumps(payload).encode('utf-8')
 
     if data.get("signed_hash", {}).get("signature") != expected.get("signature"):
         raise ValueError("Mensaje modificado o no autenticado")
 
-    return data["payload"]
+    payload = data["payload"]
+    if isinstance(payload, dict) and payload.get("cifrado"):
+        f = _get_fernet()
+        if f:
+            payload = json.loads(f.decrypt(payload["datos"].encode()))
+            print(f"[Crypto] Mensaje descifrado: {payload}")
+    return json.dumps(payload).encode('utf-8')
 
 
 def envolver_callback(callback):

@@ -48,7 +48,8 @@ def procesar_inventario_fallido(ch, method, properties, body):
 
 def procesar_orden_completada(ch, method, properties, body):
     try:
-        datos = json.loads(body)
+        datos = body if isinstance(body, dict) else json.loads(body)
+        print(f"[DEBUG] items recibidos: {datos.get('items')}")
         id_orden_compra = datos.get('id_orden_compra')
         email = datos.get('usuario_email')
         items_raw = datos.get('items')

@@ -86,6 +86,20 @@ docker-compose -f docker-compose.notificaciones.yml up -d
 docker-compose -f docker-compose.frontend.yml up -d
 ```
 
+# Gestion de respaldos
+el proyecto cuenta con un script de de administracion de respaldos de las bases de datos en backend/backup_manager.py.
+Este se puede ejecutar desde el host mientras docker este corriendo y el contenedor de la base de datos este levantado.
+Se puede ejecutar como 
+```bash
+python3 backend/backup_manager.py 
+```
+Para que haga respaldos de todas las bases de datos del sistema en el equipo
+Tambien se puede ejecutar selectivamente como
+```bash
+python3 backend/backup_manager.py {nombre_bd}
+```
+dnode las opciones validas son: 
+db_usuarios, db_catalogo, db_ventas, db_perfil, db_inv_latam, db_inv_eu, db_inv_us, db_inv_asia
 
 # Variables de Entorno
 

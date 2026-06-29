@@ -34,6 +34,7 @@ env/
 .venv/
 .env
 backend/.pytest_cache/
+backend/backups
 
 # =========================
 # IDEs y Editores (VS Code, IntelliJ, etc)

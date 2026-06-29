@@ -7,7 +7,7 @@ import random
 import string
 
 # La URL de tu microservicio administrador dentro de la red de Docker
-ADMIN_URL = "http://modulo_admin:5005/admin/agregar_stock"
+ADMIN_URL = "http://inventario_api:5010/api/inventario/agregar_stock"
 
 REGIONES = ['LATAM', 'US', 'EU', 'ASIA']
 

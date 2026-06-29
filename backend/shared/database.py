@@ -28,8 +28,9 @@ def get_inventory_db_name(region):
     """
     shards = {
         "LATAM": "db_inv_latam",
-        "NA": "db_inv_na",
-        "EU": "db_inv_eu"
+        "US": "db_inv_us",
+        "EU": "db_inv_eu",
+        "ASIA": "db_inv_asia"
     }
     return shards.get(region.upper(), "db_inv_latam")
 

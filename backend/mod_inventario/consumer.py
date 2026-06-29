@@ -39,14 +39,19 @@ def procesar_orden_creada(ch, method, properties, body):
         for item in items:
             juego_id = item.get('juego_id')
             juego_titulo = item.get('titulo')
-            resultado_reserva = reservar_codigo_seguro(juego_id, region, id_orden_compra)
+            cantidad = int(item.get('cantidad', 1))
 
-            if resultado_reserva:
-                # Almacenar la reserva exitosa añadiendo el juego_id para el payload final
-                resultado_reserva['juego_id'] = juego_id
-                reservas_exitosas.append(resultado_reserva)
-            else:
-                juegos_sin_stock.append({"juego_id": juego_id, "titulo": juego_titulo})   
+            # Ejecutamos la reserva tantas veces como unidades se hayan pedido
+            for _ in range(cantidad):
+                resultado_reserva = reservar_codigo_seguro(juego_id, region, id_orden_compra)
+
+                if resultado_reserva:
+                    # Almacenar la reserva exitosa añadiendo el juego_id para el payload final
+                    resultado_reserva['juego_id'] = juego_id
+                    reservas_exitosas.append(resultado_reserva)
+                else:
+                    juegos_sin_stock.append({"juego_id": juego_id, "titulo": juego_titulo})
+                    break # Si falta uno del mismo tipo, rompemos el ciclo de este juego
                 
             
         # ¿Hubo al menos un fallo de stock?

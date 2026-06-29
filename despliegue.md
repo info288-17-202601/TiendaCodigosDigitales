@@ -22,6 +22,10 @@ Incluir el `.env` en la raíz del proyecto con las variables sensibles (DB_PASSW
 ## 2) Levantar la infraestructura (Postgres, RabbitMQ, Redis, Nginx)
 Usar los archivos de compose que describen la infraestructura.
 
+Primero, crear la red:
+```bash
+docker network create red_tienda
+```
 Comando:
 
 ```bash

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const Admin = () => {
   const [games, setGames] = useState([]);
@@ -8,6 +9,7 @@ const Admin = () => {
   const [codigos, setCodigos] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const {user} = useAuth();
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -50,7 +52,9 @@ const Admin = () => {
     }
     setLoading(false);
   };
-
+  
+  if (!user || user.rol !== 'admin') return null;
+  
   return (
     <div className="animate-fade-in" style={styles.container}>
       <div className="glass-card" style={styles.card}>

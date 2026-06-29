@@ -4,13 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
 const Cart = ({ onNavigate }) => {
-  const { cart, removeFromCart, clearCart, loading, updateRegion, updateQuantity } = useCart();
+  const { cart, removeFromCart, clearCart, loading, updateQuantity } = useCart();
   const { user } = useAuth();
 
   const [checkoutStatus, setCheckoutStatus] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [ordenes, setOrdenes] = useState([]);
+  const { region } = useAuth();
 
   const confirmClearCart = async () => {
     await clearCart();
@@ -219,16 +220,7 @@ const Cart = ({ onNavigate }) => {
 
             <div style={styles.summaryRow}>
               <span>Región de compra</span>
-              <select 
-                value={cart.region_compra || 'LATAM'} 
-                onChange={(e) => updateRegion(e.target.value)}
-                style={styles.regionSelect}
-              >
-                <option value="LATAM">LATAM</option>
-                <option value="NA">North America</option>
-                <option value="EU">Europe</option>
-                <option value="ASIA">Asia</option>
-              </select>
+              <span>{region || 'LATAM'}</span>
             </div>
 
             <hr style={styles.divider} />

@@ -11,7 +11,7 @@ import LoginModal from './components/LoginModal';
 function AppContent() {
   const [currentView, setCurrentView] = useState('home');
   const [selectedGameId, setSelectedGameId] = useState(null);
-  const { showLoginModal } = useAuth();
+  const { showLoginModal, authLoading, user } = useAuth();
 
   const navigate = (view, payload = null) => {
     setCurrentView(view);
@@ -20,6 +20,20 @@ function AppContent() {
     }
     window.scrollTo(0, 0);
   };
+
+  if (authLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '1.5rem'
+      }}>
+        Cargando...
+      </div>
+    );
+  }
 
   return (
     <>

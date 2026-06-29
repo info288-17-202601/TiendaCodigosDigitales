@@ -4,10 +4,13 @@ import { useAuth } from '../context/AuthContext';
 
 const Navbar = ({ onNavigate, currentView }) => {
   const { cart } = useCart();
-  const { user, logout, setShowLoginModal } = useAuth();
+  const { user, authLoading, logout, setShowLoginModal } = useAuth();
 
   const totalItems = cart.items.reduce((acc, item) => acc + item.cantidad, 0);
-
+  
+  if (authLoading) {
+    return null;
+  }
   return (
     <nav style={styles.nav} className="glass">
       <div className="container" style={styles.container}>
@@ -22,13 +25,14 @@ const Navbar = ({ onNavigate, currentView }) => {
           >
             CATÁLOGO
           </button>
-
-          <button
-            className={`btn-secondary ${currentView === 'admin' ? 'active' : ''}`}
-            onClick={() => onNavigate('admin')}
-          >
-            MODO ADMIN
-          </button>
+          {user && user.rol === 'admin' && (
+            <button
+              className={`btn-secondary ${currentView === 'admin' ? 'active' : ''}`}
+              onClick={() => onNavigate('admin')}
+            >
+              MODO ADMIN
+            </button>
+          )}
 
           <button
             className="btn-primary"

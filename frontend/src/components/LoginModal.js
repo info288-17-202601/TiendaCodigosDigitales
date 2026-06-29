@@ -72,7 +72,7 @@ const LoginModal = () => {
         {error && <div style={{ color: error.includes('exitoso') ? 'var(--success)' : 'var(--danger)', marginBottom: '1rem' }}>{error}</div>}
 
         {isLoginTab ? (
-          <form onSubmit={handleLogin} style={styles.form}>
+          <form key="login" onSubmit={handleLogin} style={{ ...styles.form, animation: 'fadeIn 0.5s' }}>
             <input
               type="email"
               placeholder="Email"
@@ -94,7 +94,7 @@ const LoginModal = () => {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleRegister} style={styles.form}>
+          <form key="register" onSubmit={handleRegister} style={{ ...styles.form, animation: 'fadeIn 0.5s' }}>
             <input
               type="text"
               placeholder="Nombre de Usuario"

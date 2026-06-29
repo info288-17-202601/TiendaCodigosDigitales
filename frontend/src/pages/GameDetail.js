@@ -110,7 +110,7 @@ const GameDetail = ({ gameId, onNavigate }) => {
 
         const checkStock = (region) => {
           if (isArrayFormat) {
-            const idx = { 'EU': 0, 'US': 1, 'LATAM': 2 }[region];
+            const idx = { 'EU': 0, 'US': 1, 'LATAM': 2, 'ASIA': 3 }[region];
             const val = game.disponibilidad_regional[idx];
             return val;
           }

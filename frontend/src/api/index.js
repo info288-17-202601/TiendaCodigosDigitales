@@ -167,9 +167,12 @@ export const api = {
 
   addStock: async (payload) => {
     try {
-      const res = await fetch(`http://localhost/admin/admin/agregar_stock`, {
+      const res = await fetch(`http://localhost/inventario/agregar_stock`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...authHeaders()
+         },
         body: JSON.stringify(payload),
       });
       const contentType = res.headers.get('content-type') || '';
@@ -220,7 +223,7 @@ export const api = {
 
   // 3. Obtener datos del usuario (Valida token contra caché/Redis)
   getUsuario: async (token) => {
-    const url = `${API_URL}/usuario?token=${encodeURIComponent(token)}`;
+    const url = `${API_URL}/usuario/usuario?token=${encodeURIComponent(token)}`;
     try {
       // Implementación de deduplicación (inflight) para evitar peticiones repetidas
       if (inflight.has(url)) return await inflight.get(url);
@@ -229,7 +232,7 @@ export const api = {
         const res = await fetch(url); // Coincide con @app.route('/usuario', methods=['GET'])
         if (!res.ok) return null;
         const data = await res.json();
-        return data.detalle || null;
+        return data;
       })();
 
       inflight.set(url, p);

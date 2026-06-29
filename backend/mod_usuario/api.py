@@ -23,24 +23,29 @@ def main():
 
 # Solicitar datos de un usuario
 #
-# GET /usuario?token=algo
-@app.route('/usuario',methods=['GET'])
+@app.route('/usuario', methods=['GET'])
 def getUsuario():
     token = request.args.get('token')
-    if token:
-        try:
-            resultado = get_sesion(token)
-            if resultado:
-                return jsonify({"mensaje":"usuario encontrado",
-                                "detalle":json.loads(resultado)}),200
-            
-            else:
-                return jsonify({"error":"usuario no encontrado"}),401
-            
-        except Exception as e:
-            return jsonify({"error":"Ocurrio un error al intentar conseguir los datos","detalle":e}),402
 
-    return jsonify({"error":"No se ingreso nada"}),400
+    if not token:
+        return jsonify({"error": "No se ingreso token"}), 400
+
+    try:
+        resultado = get_sesion(token)
+
+        if not resultado:
+            return jsonify({"error": "usuario no encontrado"}), 401
+
+        if isinstance(resultado, str):
+            resultado = json.loads(resultado)
+
+        return jsonify(resultado), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Error al obtener usuario",
+            "detalle": str(e)
+        }), 500
 # Añadir un usuario a la BD
 #
 # POST /registrar

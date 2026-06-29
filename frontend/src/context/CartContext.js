@@ -133,13 +133,6 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const updateRegion = (region) => {
-    setCart(prev => ({
-      ...prev,
-      region_compra: region
-    }));
-  };
-
   const removeFromCart = async (juego_id) => {
     try {
       await api.removeFromCart(juego_id);
@@ -183,7 +176,6 @@ export const CartProvider = ({ children }) => {
         cart,
         addToCart,
         updateQuantity,
-        updateRegion,
         removeFromCart,
         clearCart,
         loading
